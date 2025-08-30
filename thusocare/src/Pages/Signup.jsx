@@ -15,11 +15,16 @@ const App = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+<<<<<<< HEAD
   const [message, setMessage] = useState('');
 
   // State for Supabase
   const [supabase, setSupabase] = useState(null);
   const [userId, setUserId] = useState(null);
+=======
+
+
+>>>>>>> e5e2027801ebd9e3ab5ede92892896c5740156e4
 
   // Initialize Supabase
   useEffect(() => {
@@ -45,12 +50,16 @@ const App = () => {
           <p className="subtitle">Create your account to access personalized healthcare services.</p>
         </div>
 
+<<<<<<< HEAD
         {/* Display User ID */}
         {userId && (
           <div className="user-id-display">
             Your User ID: <span className="user-id">{userId}</span>
           </div>
         )}
+=======
+        
+>>>>>>> e5e2027801ebd9e3ab5ede92892896c5740156e4
 
         {/* Google Login Button */}
         <button
@@ -166,12 +175,16 @@ const App = () => {
           </button>
         </form>
 
+<<<<<<< HEAD
         {/* Message Box */}
         {message && (
           <div className="message-box">
             {message}
           </div>
         )}
+=======
+        
+>>>>>>> e5e2027801ebd9e3ab5ede92892896c5740156e4
       </div>
     </div>
   );
