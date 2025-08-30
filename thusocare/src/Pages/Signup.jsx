@@ -30,6 +30,7 @@ const Signup = () => {
   // State for Supabase
   const [userId, setUserId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [age, setAge] = useState(null);
 
   // Initialize Supabase and handle auth state changes
   useEffect(() => {
@@ -37,8 +38,8 @@ const Signup = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         console.log('User is logged in:', session.user);
-        // If user is already authenticated, redirect to health profile
-        navigate('/health-profile');
+       
+       
       }
     };
     getSession();
@@ -58,32 +59,54 @@ const Signup = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Validate South African ID number
+  const validateSAID = (idNumber) => {
+    // Check if ID is 13 digits
+    if (!/^\d{13}$/.test(idNumber)) {
+        return 'ID Number must be 13 digits';
+    }
+
+    // Basic date validation from ID
+    const year = parseInt(idNumber.substring(0, 2));
+    const month = parseInt(idNumber.substring(2, 4));
+    const day = parseInt(idNumber.substring(4, 6));
+
+    if (month < 1 || month > 12) {
+        return 'Invalid month in ID Number';
+    }
+
+    if (day < 1 || day > 31) {
+        return 'Invalid day in ID Number';
+    }
+
+    return null; // Return null if valid
+};
+
+const calculateAgeFromID = (idNumber) => {
+    const year = parseInt(idNumber.substring(0, 2));
+    const currentYear = new Date().getFullYear() % 100;
+    const birthYear = year <= currentYear ? 2000 + year : 1900 + year;
+    const age = new Date().getFullYear() - birthYear;
+    return age;
+};
+
   // Handle form submission with Supabase
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    // Validate password match
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
+    // Validate ID Number format only
+    const idError = validateSAID(idNumber);
+    if (idError) {
+        setError(idError);
+        setLoading(false);
+        return;
     }
 
-    // Basic email validation
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address');
-      setLoading(false);
-      return;
-    }
-
-    // Validate gender
-    if (!gender || !['Male', 'Female'].includes(gender)) {
-      setError('Please select a valid gender (Male or Female)');
-      setLoading(false);
-      return;
-    }
+    // Calculate age from ID
+    const userAge = calculateAgeFromID(idNumber);
+    setAge(userAge);
 
     try {
       // Sign up with email and password
@@ -94,9 +117,9 @@ const Signup = () => {
           data: {
             first_name: firstName,
             surname: surname,
-            id_number: idNumber,
             gender: gender,
             phone: phone,
+            age: userAge // Store age in the database
           },
         },
       });
@@ -107,18 +130,19 @@ const Signup = () => {
         return;
       }
 
-      // Insert additional user data into the users table
+      // Store additional user data in profiles table
       const { error: dbError } = await supabase
         .from('users')
-        .insert({
-          user_id: authData.user.id,
-          name: firstName,
-          surname: surname,
-          id_number: idNumber,
-          gender: gender,
-          phone: phone,
-          email: email,
-        });
+        .insert([
+          {
+            user_id: authData.user.id,
+            name: firstName,
+            surname: surname,
+            gender: gender,
+            phone: phone,
+            age: userAge // Store age in profiles table
+          }
+        ]);
 
       if (dbError) {
         setError(`Failed to save user data: ${dbError.message}`);

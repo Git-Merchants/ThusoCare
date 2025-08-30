@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import '../Styling/HealthProfile.css';
+import { useAuth } from '../context/AuthContext'; // Fixed import
+import { createClient } from '@supabase/supabase-js';
+
+// Create supabase client (or better yet, export it from AuthContext and import it)
+const supabase = createClient(
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_ANON_KEY
+);
 
 const HealthProfile = () => {
+  const { user, loading, error: authError } = useAuth(); // Fixed usage and added loading/error
   const [healthData, setHealthData] = useState({
     bloodType: '',
     chronicDiseases: [],
@@ -20,8 +29,43 @@ const HealthProfile = () => {
   const [newDisease, setNewDisease] = useState('');
   const [newAllergy, setNewAllergy] = useState('');
   const [newMedication, setNewMedication] = useState({ name: '', dosage: '', frequency: '' });
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="health-profile-container">
+        <div className="health-profile-card">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth error
+  if (authError) {
+    return (
+      <div className="health-profile-container">
+        <div className="health-profile-card">
+          <p className="error-message">Authentication error: {authError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login requirement
+  if (!user) {
+    return (
+      <div className="health-profile-container">
+        <div className="health-profile-card">
+          <p className="error-message">Please log in to access your health profile.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -107,11 +151,54 @@ const HealthProfile = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Health Data Submitted:', healthData);
-    alert('Health profile saved successfully!');
+    
+    try {
+      const { error } = await supabase.from('info').insert({
+        user_id: user.id,
+        height: healthData.height ? parseFloat(healthData.height) : null,
+        weight: healthData.weight ? parseFloat(healthData.weight) : null,
+        blood_type: healthData.bloodType,
+        chronic_diseases: healthData.chronicDiseases.join(', '),
+        allergies: healthData.allergies.join(', '),
+        medication: healthData.medications.map(med => `${med.name} (${med.dosage}, ${med.frequency})`).join('; '),
+        emergency_contact: healthData.emergencyContact.name,
+        relationship: healthData.emergencyContact.relationship,
+        phone_number: healthData.emergencyContact.phone,
+        additional_notes: healthData.additionalNotes
+      });
+
+      if (error) throw error;
+
+      // Clear the form data after successful save
+      setHealthData({
+        bloodType: '',
+        chronicDiseases: [],
+        allergies: [],
+        emergencyContact: {
+          name: '',
+          relationship: '',
+          phone: ''
+        },
+        medications: [],
+        height: '',
+        weight: '',
+        additionalNotes: ''
+      });
+
+      // Also clear any temporary input states
+      setNewDisease('');
+      setNewAllergy('');
+      setNewMedication({ name: '', dosage: '', frequency: '' });
+
+      setSuccess(true);
+      setError(null);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(`Failed to save health profile: ${err.message}`);
+      setSuccess(false);
+    }
   };
 
   return (
@@ -366,6 +453,9 @@ const HealthProfile = () => {
             Save Health Profile
           </button>
         </form>
+
+        {error && <p className="error-message">{error}</p>}
+        {success && <p className="success-message">Health profile saved successfully!</p>}
       </div>
     </div>
   );

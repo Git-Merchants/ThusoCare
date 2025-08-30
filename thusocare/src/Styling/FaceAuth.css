@@ -1,0 +1,91 @@
+
+.face-auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+  font-family: Arial, sans-serif;
+}
+
+.webcam-container {
+  position: relative;
+  text-align: center;
+}
+
+.webcam {
+  border-radius: 3px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  height: auto;
+}
+
+.webcam-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.face-guide {
+  width: 200px;
+  height: 300px;
+  border: 2px solid #00aaff;
+  border-radius: 50%;
+  background: rgba(0, 170, 255, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #00aaff;
+  font-size: 14px;
+  text-align: center;
+  padding: 10px;
+}
+
+.capture-btn, .start-auth-btn {
+  margin-top: 20px;
+  padding: 12px 25px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.start-auth-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.start-auth-btn:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
+.capture-btn {
+  background-color: #008CBA;
+  color: white;
+}
+
+.capture-btn:hover {
+  background-color: #007B9A;
+  transform: scale(1.05);
+}
+
+.capture-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  margin-top: 15px;
+  color: #ff4444;
+  font-size: 14px;
+  text-align: center;
+}

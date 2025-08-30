@@ -1,13 +1,15 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 
-import LandingPage from './Pages/Landing.jsx'; 
+import LandingPage from '../src/Pages/Landing.jsx'; 
 import LoginPage from './Pages/Login.jsx';
 import HealthProfile from './Pages/HealthProfile.jsx';
 import PatientDashboard from './Pages/PatientProfile.jsx';
 import SignUp from './Pages/Signup.jsx';
+import FaceAuth from './Pages/FaceAuth.jsx';
 
 import { TranslationProvider } from './context/TranslationContext';
+import { AuthProvider } from './context/AuthContext';
 
 import './App.css'; // Import your global CSS
 
@@ -22,38 +24,41 @@ const ProfileForm = () =>
 function App() {
   return (
     <TranslationProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Navigate to="/landing" replace />} />
-          <Route path="/landing" element={<LandingPage />} />
-          <Route 
-            path="/login" 
-            element={
-              <AuthLayout>
-                <LoginPage />
-              </AuthLayout>
-            } 
-          />
-          <Route 
-            path="/signup" 
-            element={
-              <AuthLayout>
-                <SignUp />
-              </AuthLayout>
-            } 
-          />
-          <Route 
-            path="/profile-form" 
-            element={
-              <AuthLayout>
-                <ProfileForm />
-              </AuthLayout>
-            } 
-          />
-          <Route path="/health-profile" element={<HealthProfile />} />
-          <Route path="/patient-dashboard" element={<PatientDashboard />} />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Navigate to="/landing" replace />} />
+            <Route path="/landing" element={<LandingPage />} />
+            <Route 
+              path="/login" 
+              element={
+                <AuthLayout>
+                  <LoginPage />
+                </AuthLayout>
+              } 
+            />
+            <Route 
+              path="/signup" 
+              element={
+                <AuthLayout>
+                  <SignUp />
+                </AuthLayout>
+              } 
+            />
+            <Route 
+              path="/profile-form" 
+              element={
+                <AuthLayout>
+                  <ProfileForm />
+                </AuthLayout>
+              } 
+            />
+            <Route path="/health-profile" element={<HealthProfile />} />
+            <Route path="/patient-dashboard" element={<PatientDashboard />} />
+              <Route path="/authentication" element={<FaceAuth />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </TranslationProvider>
   );
 }

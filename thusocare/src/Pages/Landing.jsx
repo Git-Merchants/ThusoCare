@@ -1,18 +1,42 @@
-import React, { useState } from 'react';
-import '../Styling/LandingPage.css'; // Import the CSS file forLandingPage.css';
-
-
+import React,{useState} from 'react';
+import '../Styling/LandingPage.css'; 
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 const LandingPage = () => {
-    const [showLanguages, setShowLanguages] = useState(false);
-    const [selectedLanguage, setSelectedLanguage] = useState('Change Language');
 
-    // Function for smooth scrolling to sections
+      const navigate = useNavigate();
+    const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+    const { user, profile } = useAuth();
+    const isLoggedIn = !!user;
+    const userName = profile?.name;
+  
+
+
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
     const scrollToSection = (id) => {
         document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
     };
 
-    const handleNavigation = (path) => {
-    window.location.href = path;
+     
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+
+   
+  const handleAuthClick = () => {
+    navigate('/authentication');
+  };
+
+  const handleTranslation=()=>{
+  
+  }
+  
+  const handleSignupClick = () => {
+    navigate('/signup');
   };
 
     return (
@@ -20,39 +44,25 @@ const LandingPage = () => {
             {/* Navigation Bar */}
             <nav className="navbar">
                 <div className="navbar-content">
-                    {/* Language button moved to the left */}
-                  
-                    
                     <div className="logo">ThusoCare</div>
+                     {isLoggedIn && userName ? (
+                            <div className="user-menu">
+                                {/* User's first initial in a circle */}
+                                <div className="user-initial-circle">
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                        ) : (
                     <div className="nav-links">
-                        <div className="language-dropdown">
-        <button 
-            className="signup-btn language-btn"
-            onClick={() => setShowLanguages(!showLanguages)}
-        >
-            {selectedLanguage}
-        </button>
-        {showLanguages && (
-            <div className="dropdown-menu">
-                {['English', 'Sotho', 'IsiZulu', 'Xhosa', 'Afrikaans'].map((lang) => (
-                    <button
-                        key={lang}
-                        className="dropdown-item"
-                        onClick={() => {
-                            setSelectedLanguage(lang);
-                            setShowLanguages(false);
-                        }}
-                    >
-                        {lang}
-                    </button>
-                ))}
-            </div>
-        )}
-    </div>
+                        {/* Inner links for sections */}
+                          <button href="/login" className="signup-btn" onClick={() => handleTranslation()}>Change Language</button>
                         <a onClick={() => scrollToSection('features')} className="nav-link hidden-sm">Features</a>
-                        <button href="/login" className="signup-btn" onClick={() => handleNavigation('login')}>Login</button>
-                        <button href="/signup" className="signup-btn" onClick={() => handleNavigation('signup')}>Sign Up</button>
+                      
+                        {/* Login and Sign Up buttons */}
+                        <button href="/login" className="signup-btn" onClick={() => handleLoginClick()}>Login</button>
+                        <button href="/signup" className="signup-btn" onClick={() => handleSignupClick()}>Sign Up</button>
                     </div>
+                    )}
                 </div>
             </nav>
 
@@ -63,7 +73,7 @@ const LandingPage = () => {
                     <p className="hero-subtitle">
                         Manage appointments, track vitals, and connect with doctors, all in one place.
                     </p>
-                    <button className="get-started-btn" onClick={() => handleNavigation('signup')}>
+                    <button className="get-started-btn" onClick={() => handleAuthClick()}>
                         Get Started
                     </button>
                 </div>
