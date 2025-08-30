@@ -1,8 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import LandingPage from './Pages/Landing.jsx'; // Corrected path
-import LoginPage from './Pages/Login.jsx'; // Corrected path
+import LandingPage from './Pages/Landing.jsx'; 
+import LoginPage from './Pages/Login.jsx';
+import HealthProfile from './Pages/HealthProfile.jsx';
+import PatientDashboard from './Pages/PatientProfile.jsx';
 import './App.css'; // Import your global CSS
+
 
 // Placeholder components to prevent errors
 const AuthLayout = ({ children }) => 
@@ -42,6 +45,8 @@ function App() {
             </AuthLayout>
           } 
         />
+        <Route path="/health-profile" element={<HealthProfile />} />
+        <Route path="/patient-dashboard" element={<PatientDashboard />} />
       </Routes>
     </Router>
   );
