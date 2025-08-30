@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 import '../Styling/Signup.css';
 
 // Initialize Supabase client
@@ -8,7 +9,9 @@ const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // The main application component
-const App = () => {
+const Signup = () => {
+  const navigate = useNavigate();
+
   // State for form fields
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -18,20 +21,42 @@ const App = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // State for error, loading, and message
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-  // Check for authenticated user on mount
+  // State for Supabase
+  const [userId, setUserId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  // Initialize Supabase and handle auth state changes
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // User is already logged in, redirect or handle accordingly
         console.log('User is logged in:', session.user);
+        // If user is already authenticated, redirect to health profile
+        navigate('/health-profile');
       }
     };
     getSession();
-  }, []);
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          console.log('User signed in:', session.user);
+          // Redirect to health profile after successful sign-in
+          navigate('/health-profile');
+        }
+      }
+    );
+
+    // Cleanup subscription
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   // Handle form submission with Supabase
   const handleSubmit = async (e) => {
@@ -92,19 +117,18 @@ const App = () => {
           id_number: idNumber,
           gender: gender,
           phone: phone,
-          email: email, // Store email in users table
+          email: email,
         });
 
       if (dbError) {
         setError(`Failed to save user data: ${dbError.message}`);
-        // Optionally delete the auth user if db insert fails
         await supabase.auth.admin.deleteUser(authData.user.id);
         setLoading(false);
         return;
       }
 
-      // Success: Redirect or show confirmation
-      alert('Account created successfully! Please check your email to verify.');
+      // Success: Show modal instead of immediate navigation
+      setShowModal(true);
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
@@ -119,10 +143,10 @@ const App = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin, // Redirect back to your app after login
+          redirectTo: `${window.location.origin}/health-profile`,
         },
       });
 
@@ -131,12 +155,30 @@ const App = () => {
         setLoading(false);
         return;
       }
+
+      // If successful, the user will be redirected to health-profile
+      // The redirectTo option above handles the redirect automatically
+      console.log('Google sign-in successful, redirecting to health profile...');
+      
     } catch (err) {
       setError('An unexpected error occurred');
       console.error(err);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Simple Modal Component
+  const Modal = ({ show, onClose, children }) => {
+    if (!show) return null;
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          {children}
+          <button className="modal-close-btn" onClick={onClose}>Continue</button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -147,8 +189,12 @@ const App = () => {
           <p className="subtitle">Create your account to access personalized healthcare services.</p>
         </div>
 
-        {/* Error Message */}
-        {error && <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+        {/* Display User ID */}
+        {userId && (
+          <div className="user-id-display">
+            Your User ID: <span className="user-id">{userId}</span>
+          </div>
+        )}
 
         {/* Google Login Button */}
         <button
@@ -227,8 +273,8 @@ const App = () => {
                 required
               >
                 <option value="" disabled>Select Gender</option>
-                <option value="Male">Male</option> {/* Updated to title case */}
-                <option value="Female">Female</option> {/* Updated to title case */}
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
               </select>
             </div>
           </div>
@@ -277,9 +323,28 @@ const App = () => {
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
+
+        {/* Error Message */}
+        {error && (
+          <div className="message-box" style={{ color: 'red' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Message Box */}
+        {message && (
+          <div className="message-box">
+            {message}
+          </div>
+        )}
       </div>
+      {/* Success Modal */}
+      <Modal show={showModal} onClose={() => navigate('/health-profile')}>
+        <h2>Account Created!</h2>
+        <p>Your account has been successfully created. Welcome to ThusoCare!</p>
+      </Modal>
     </div>
   );
 };
 
-export default App;
+export default Signup;

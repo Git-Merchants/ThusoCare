@@ -35,12 +35,14 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1rem;
+    position: relative;
 }
 
 .logo {
     font-size: 1.875rem;
     font-weight: bold;
     color: #3b82f6;
+    margin-left: 120px; /* Add space for the language button */
 }
 
 .nav-links {
@@ -228,6 +230,65 @@ body {
     font-size: 0.875rem;
 }
 
+/* Language Button */
+.language-btn {
+    background-color: #34618e;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    margin-top: -30px;
+    border-radius: 999px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.3s;
+}
+
+
+
+.language-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: rgb(249, 249, 249);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 0.5rem;
+    min-width: 160px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border: none;
+    background: none;
+    color: #4b5563;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f3f4f6;
+    color: #3b82f6;
+}
+
+.language-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Close dropdown when clicking outside */
+.language-dropdown:focus-within .dropdown-menu {
+    display: block;
+}
+
 /* Responsive Overrides */
 @media (min-width: 640px) {
     .navbar-content {
@@ -280,5 +341,21 @@ body {
     }
     .features-grid {
         grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .language-btn {
+        position: static;
+        margin-right: 1rem;
+    }
+    
+    .logo {
+        margin-left: 0;
+    }
+    
+    .navbar-content {
+        flex-wrap: wrap;
+        gap: 1rem;
     }
 }

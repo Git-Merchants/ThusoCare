@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../Styling/LandingPage.css'; // Import the CSS file forLandingPage.css';
 
+
 const LandingPage = () => {
+    const [showLanguages, setShowLanguages] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState('Change Language');
+
     // Function for smooth scrolling to sections
     const scrollToSection = (id) => {
         document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
@@ -16,14 +20,36 @@ const LandingPage = () => {
             {/* Navigation Bar */}
             <nav className="navbar">
                 <div className="navbar-content">
+                    {/* Language button moved to the left */}
+                  
+                    
                     <div className="logo">ThusoCare</div>
                     <div className="nav-links">
-                        {/* Inner links for sections */}
+                        <div className="language-dropdown">
+        <button 
+            className="signup-btn language-btn"
+            onClick={() => setShowLanguages(!showLanguages)}
+        >
+            {selectedLanguage}
+        </button>
+        {showLanguages && (
+            <div className="dropdown-menu">
+                {['English', 'Sotho', 'IsiZulu', 'Xhosa', 'Afrikaans'].map((lang) => (
+                    <button
+                        key={lang}
+                        className="dropdown-item"
+                        onClick={() => {
+                            setSelectedLanguage(lang);
+                            setShowLanguages(false);
+                        }}
+                    >
+                        {lang}
+                    </button>
+                ))}
+            </div>
+        )}
+    </div>
                         <a onClick={() => scrollToSection('features')} className="nav-link hidden-sm">Features</a>
-                        <a onClick={() => scrollToSection('about')} className="nav-link hidden-sm">About</a>
-                        {/* Translation link */}
-                        <button className="nav-link" onClick={() => handleNavigation('/translation')}>Translation</button>
-                        {/* Login and Sign Up buttons */}
                         <button href="/login" className="signup-btn" onClick={() => handleNavigation('login')}>Login</button>
                         <button href="/signup" className="signup-btn" onClick={() => handleNavigation('signup')}>Sign Up</button>
                     </div>
