@@ -95,6 +95,7 @@ body {
 .hero-content {
     text-align: center;
     margin-bottom: 2.5rem;
+    padding-left: 50px;
 }
 
 .hero-title {
