@@ -1,8 +1,50 @@
 import React from 'react';
-import LandingPage from '../src/Pages/Landing.jsx'; // Correctly import the component from the Canvas
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import LandingPage from './Pages/Landing.jsx'; // Corrected path
+import LoginPage from './Pages/Login.jsx'; // Corrected path
+import './App.css'; // Import your global CSS
 
-const App = () => {
-  return <LandingPage />;
-};
+// Placeholder components to prevent errors
+const AuthLayout = ({ children }) => 
+    <div className="auth-layout">{children}</div>;
+const SignUp = () => 
+    <div>Sign Up Page</div>;
+const ProfileForm = () => 
+    <div>Profile Form Page</div>;
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/landing" replace />} />
+        <Route path="/landing" element={<LandingPage />} />
+        <Route 
+          path="/login" 
+          element={
+            <AuthLayout>
+              <LoginPage />
+            </AuthLayout>
+          } 
+        />
+        <Route 
+          path="/signup" 
+          element={
+            <AuthLayout>
+              <SignUp />
+            </AuthLayout>
+          } 
+        />
+        <Route 
+          path="/profile-form" 
+          element={
+            <AuthLayout>
+              <ProfileForm />
+            </AuthLayout>
+          } 
+        />
+      </Routes>
+    </Router>
+  );
+}
 
 export default App;

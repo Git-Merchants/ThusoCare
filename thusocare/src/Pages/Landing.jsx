@@ -7,6 +7,10 @@ const LandingPage = () => {
         document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
     };
 
+    const handleNavigation = (path) => {
+    window.location.href = path;
+  };
+
     return (
         <div className="landing-container">
             {/* Navigation Bar */}
@@ -18,8 +22,8 @@ const LandingPage = () => {
                         <a onClick={() => scrollToSection('features')} className="nav-link hidden-sm">Features</a>
                         <a onClick={() => scrollToSection('about')} className="nav-link hidden-sm">About</a>
                         {/* Login and Sign Up buttons */}
-                        <a href="#" className="login-btn">Login</a>
-                        <a href="#" className="signup-btn">Sign Up</a>
+                        <button href="/login" className="signup-btn" onClick={() => handleNavigation('login')}>Login</button>
+                        <button href="/signup" className="signup-btn" onClick={() => handleNavigation('signup')}>Sign Up</button>
                     </div>
                 </div>
             </nav>
@@ -31,13 +35,12 @@ const LandingPage = () => {
                     <p className="hero-subtitle">
                         Manage appointments, track vitals, and connect with doctors, all in one place.
                     </p>
-                    <a href="#" className="get-started-btn">
+                    <button className="get-started-btn" onClick={() => handleNavigation('signup')}>
                         Get Started
-                    </a>
+                    </button>
                 </div>
                 <div className="hero-image">
-                    {/* A placeholder for an image or illustration */}
-                    
+                    <img src="./images/doctor.jpg" alt="Healthcare Illustration" />
                 </div>
             </header>
 
