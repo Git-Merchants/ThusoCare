@@ -179,3 +179,4 @@ const TranslationWidget = ({
 };
 
 export default TranslationWidget;
+

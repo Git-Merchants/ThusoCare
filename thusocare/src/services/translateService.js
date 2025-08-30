@@ -69,3 +69,4 @@ class TranslateService {
 }
 
 export default TranslateService;
+

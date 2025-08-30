@@ -1,37 +1,142 @@
-
-
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import '../Styling/Signup.css';
 
-
+// Initialize Supabase client
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // The main application component
 const App = () => {
   // State for form fields
+  const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [surname, setSurname] = useState('');
   const [idNumber, setIdNumber] = useState('');
-  const [gender, setGender] = useState('');
+  const [gender, setGender] = useState(''); // Default to empty string
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-
-
-  // Initialize Supabase
+  // Check for authenticated user on mount
   useEffect(() => {
-    
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // User is already logged in, redirect or handle accordingly
+        console.log('User is logged in:', session.user);
+      }
+    };
+    getSession();
   }, []);
 
   // Handle form submission with Supabase
   const handleSubmit = async (e) => {
-    
-    
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    // Validate password match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    // Basic email validation
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
+    // Validate gender
+    if (!gender || !['Male', 'Female'].includes(gender)) {
+      setError('Please select a valid gender (Male or Female)');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Sign up with email and password
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            surname: surname,
+            id_number: idNumber,
+            gender: gender,
+            phone: phone,
+          },
+        },
+      });
+
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Insert additional user data into the users table
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert({
+          user_id: authData.user.id,
+          name: firstName,
+          surname: surname,
+          id_number: idNumber,
+          gender: gender,
+          phone: phone,
+          email: email, // Store email in users table
+        });
+
+      if (dbError) {
+        setError(`Failed to save user data: ${dbError.message}`);
+        // Optionally delete the auth user if db insert fails
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        setLoading(false);
+        return;
+      }
+
+      // Success: Redirect or show confirmation
+      alert('Account created successfully! Please check your email to verify.');
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle Google Login with Supabase
   const handleGoogleLogin = async () => {
-    
+    setError(null);
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin, // Redirect back to your app after login
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,12 +147,14 @@ const App = () => {
           <p className="subtitle">Create your account to access personalized healthcare services.</p>
         </div>
 
-        
+        {/* Error Message */}
+        {error && <div className="error-message" style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
 
         {/* Google Login Button */}
         <button
           onClick={handleGoogleLogin}
           className="button google-btn"
+          disabled={loading}
         >
           <svg style={{ marginRight: '0.5rem' }} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" role="img">
             <path d="M12.0001 9.27838V12.9238H16.3335C16.1423 14.1678 15.4216 15.2289 14.3644 15.9392V18.6672H18.067C20.3703 16.5165 21.6668 13.4111 21.6668 9.27838C21.6668 8.65349 21.614 8.04944 21.5033 7.45688H12.0001V9.27838Z" fill="#FFFFFF"></path>
@@ -64,6 +171,18 @@ const App = () => {
 
         {/* Sign-up Form */}
         <form onSubmit={handleSubmit}>
+          {/* Email */}
+          <div className="input-group">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input-field"
+              required
+            />
+          </div>
+
           {/* Name and Surname */}
           <div className="form-grid">
             <div className="input-group">
@@ -108,8 +227,8 @@ const App = () => {
                 required
               >
                 <option value="" disabled>Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
+                <option value="Male">Male</option> {/* Updated to title case */}
+                <option value="Female">Female</option> {/* Updated to title case */}
               </select>
             </div>
           </div>
@@ -137,32 +256,30 @@ const App = () => {
               required
             />
           </div>
-            {/* Confirm Password */}
-            <div className="input-group">
-              <input
-                type="password"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="input-field"
-                required
-              />
-            </div>
+          {/* Confirm Password */}
+          <div className="input-group">
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="input-field"
+              required
+            />
+          </div>
 
           {/* Submit Button */}
           <button
             type="submit"
             className="button signup-btn"
+            disabled={loading}
           >
-            Create Account
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
-
-        
       </div>
     </div>
   );
-    
 };
 
 export default App;
