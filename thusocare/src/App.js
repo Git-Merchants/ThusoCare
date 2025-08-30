@@ -1,15 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-<<<<<<< HEAD
+
 import LandingPage from './Pages/Landing.jsx'; 
 import LoginPage from './Pages/Login.jsx';
 import HealthProfile from './Pages/HealthProfile.jsx';
 import PatientDashboard from './Pages/PatientProfile.jsx';
-=======
-import LandingPage from './Pages/Landing.jsx'; // Corrected path
-import LoginPage from './Pages/Login.jsx'; // Corrected path
 import SignUp from './Pages/Signup.jsx';
->>>>>>> e5e2027801ebd9e3ab5ede92892896c5740156e4
+
 import './App.css'; // Import your global CSS
 
 
