@@ -21,6 +21,8 @@ const LandingPage = () => {
                         {/* Inner links for sections */}
                         <a onClick={() => scrollToSection('features')} className="nav-link hidden-sm">Features</a>
                         <a onClick={() => scrollToSection('about')} className="nav-link hidden-sm">About</a>
+                        {/* Translation link */}
+                        <button className="nav-link" onClick={() => handleNavigation('/translation')}>Translation</button>
                         {/* Login and Sign Up buttons */}
                         <button href="/login" className="signup-btn" onClick={() => handleNavigation('login')}>Login</button>
                         <button href="/signup" className="signup-btn" onClick={() => handleNavigation('signup')}>Sign Up</button>

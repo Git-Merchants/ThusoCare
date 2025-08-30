@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import LandingPage from './Pages/Landing.jsx'; // Corrected path
 import LoginPage from './Pages/Login.jsx'; // Corrected path
+import Translation from './Pages/Translation.jsx'; // Translation page
 import './App.css'; // Import your global CSS
 
 // Placeholder components to prevent errors
@@ -42,6 +43,7 @@ function App() {
             </AuthLayout>
           } 
         />
+        <Route path="/translation" element={<Translation />} />
       </Routes>
     </Router>
   );
