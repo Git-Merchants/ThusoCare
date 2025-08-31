@@ -1,7 +1,60 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../Styling/LoginPage.css';
+import { supabase } from '../supabase/supabaseConfig';
 
 const LoginPage = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [profile, setProfile] = useState(null);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        // Authenticate with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        if (error) {
+            setError(error.message);
+            return;
+        }
+        // Fetch user profile from 'users' table
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('name, surname')
+            .eq('email', email)
+            .single();
+        if (userError || !userData) {
+            setError('Login successful, but could not fetch user profile.');
+        } else {
+            setProfile(userData);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setError('');
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+        });
+        if (error) {
+            setError(error.message);
+        }
+    };
+
+    if (profile) {
+        return (
+            <div className="login-container">
+                <div className="login-card">
+                    <h1 className="login-title">
+                        Welcome {profile.name} {profile.surname}
+                    </h1>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="login-container">
             <div className="login-card">
@@ -9,7 +62,7 @@ const LoginPage = () => {
                 <p className="login-subtitle">
                     Enter your details to access your dashboard.
                 </p>
-                <form className="login-form">
+                <form className="login-form" onSubmit={handleLogin}>
                     <div className="form-group">
                         <label htmlFor="email">Email Address</label>
                         <input
@@ -18,6 +71,8 @@ const LoginPage = () => {
                             name="email"
                             placeholder="you@example.com"
                             className="input-field"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
                             required
                         />
                     </div>
@@ -29,16 +84,25 @@ const LoginPage = () => {
                             name="password"
                             placeholder="••••••••"
                             className="input-field"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
                             required
                         />
                     </div>
                     <button type="submit" className="login-btn">
                         Log In
                     </button>
-                    <button type="button" className="login-btn">Login with Google</button>
+                    <button
+                        type="button"
+                        className="login-btn"
+                        onClick={handleGoogleLogin}
+                    >
+                        Login with Google
+                    </button>
                     <a href="#" className="forgot-password">
                         Forgot Password?
                     </a>
+                    {error && <div className="message-box">{error}</div>}
                 </form>
                 <div className="signup-link">
                     Don't have an account? <a href="#">Sign Up</a>
