@@ -7,7 +7,6 @@ const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [profile, setProfile] = useState(null);
     const navigate = useNavigate();
     const handleLogin = async (e) => {
       
@@ -41,7 +40,7 @@ const LoginPage = () => {
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                   redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL,
+                    redirectTo: `${window.location.origin}/Home` 
                 }
             });
 
@@ -50,22 +49,8 @@ const LoginPage = () => {
                 return;
             }
 
-            // Check if we have user data
-            if (data?.user) {
-                // Create or update user profile in the users table
-                const { error: profileError } = await supabase
-                    .from('users')
-                    .upsert({
-                        user_id: data.user.id,
-                        email: data.user.email,
-                        name: data.user.user_metadata.full_name,
-                        created_at: new Date()
-                    });
-
-                if (profileError) {
-                    console.error('Error updating profile:', profileError);
-                }
-
+            // Navigate after successful login
+            if (data) {
                 navigate('/Home');
             }
         } catch (err) {
@@ -73,18 +58,6 @@ const LoginPage = () => {
             setError('An error occurred during Google login');
         }
     };
-
-    if (profile) {
-        return (
-            <div className="login-container">
-                <div className="login-card">
-                    <h1 className="login-title">
-                        Welcome {profile.name} {profile.surname}
-                    </h1>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="login-container">

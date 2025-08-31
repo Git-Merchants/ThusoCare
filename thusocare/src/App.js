@@ -61,8 +61,6 @@ function App() {
             } 
           />
           <Route path="/authentication" element={<FaceAuth />} />
-          <Route path="/Home" element={<Home/>} />
-
 
           {/* Protected Routes */}
           <Route 
@@ -81,14 +79,22 @@ function App() {
               </RequireAuth>
             } 
           />
-          
+          <Route 
+            path="/home" 
+            element={
+              <RequireAuth>
+                <Home />
+              </RequireAuth>
+            } 
+          />
         </Routes>
       </AuthProvider>
     </TranslationProvider>
   );
 }
 
-
+// The RequireAuth component remains the same, as it is a child of the <Router>
+// and can safely use the useNavigate hook.
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
