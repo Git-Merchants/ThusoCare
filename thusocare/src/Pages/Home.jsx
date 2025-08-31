@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useNavigate } from 'react-router-dom';
+//import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import CallIcon from '../images/call.png';
 import { useAuth } from '../context/AuthContext';
@@ -12,7 +12,7 @@ import '../Styling/Home.css';
 const Home = () => {
     // navigate is intentionally left here, though unused,
     // as it's common practice to have it ready for future use.
-    const navigate = useNavigate(); 
+  //  const navigate = useNavigate(); 
     const { user } = useAuth();
     const [showLanguages, setShowLanguages] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState('English');
