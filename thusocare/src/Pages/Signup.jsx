@@ -50,7 +50,7 @@ const Signup = () => {
         if (event === 'SIGNED_IN' && session) {
           console.log('User signed in:', session.user);
           // Redirect to health profile after successful sign-in
-          navigate('/health-profile');
+          navigate('/Home');
         }
       }
     );
@@ -170,7 +170,7 @@ const calculateAgeFromID = (idNumber) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/health-profile`,
+          redirectTo: `${window.location.origin}/Home`,
         },
       });
 

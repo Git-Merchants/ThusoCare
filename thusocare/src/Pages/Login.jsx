@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../Styling/LoginPage.css';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase/supabaseConfig';
 
 const LoginPage = () => {
@@ -7,8 +8,9 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [profile, setProfile] = useState(null);
-
+    const navigate = useNavigate();
     const handleLogin = async (e) => {
+      
         e.preventDefault();
         setError('');
         // Authenticate with Supabase
@@ -29,17 +31,46 @@ const LoginPage = () => {
         if (userError || !userData) {
             setError('Login successful, but could not fetch user profile.');
         } else {
-            setProfile(userData);
+            navigate('/Home');
         }
     };
 
     const handleGoogleLogin = async () => {
         setError('');
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-        });
-        if (error) {
-            setError(error.message);
+        try {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/Home`
+                }
+            });
+
+            if (error) {
+                setError(error.message);
+                return;
+            }
+
+            // Check if we have user data
+            if (data?.user) {
+                // Create or update user profile in the users table
+                const { error: profileError } = await supabase
+                    .from('users')
+                    .upsert({
+                        user_id: data.user.id,
+                        email: data.user.email,
+                        name: data.user.user_metadata.full_name,
+                        created_at: new Date()
+                    });
+
+                if (profileError) {
+                    console.error('Error updating profile:', profileError);
+                }
+
+                navigate('/Home');
+            }
+        } catch (err) {
+            console.error('Google login error:', err);
+            setError('An error occurred during Google login');
         }
     };
 

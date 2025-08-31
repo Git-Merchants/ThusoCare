@@ -1,6 +1,6 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 
 // Initialize Supabase client outside the component to ensure it's a singleton
 const supabase = createClient(
@@ -16,35 +16,21 @@ const AuthContext = createContext({
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate(); // Get the navigate function from React Router
 
   useEffect(() => {
     // Check active sessions and sets the user
-     const fetchUserProfile = async (userId) => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('name') // Select the 'name' column
-          .eq('user_id', userId)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        setProfile(data); // Set the profile data
-      } catch (err) {
-        console.error('Error fetching user profile:', err.message);
-        setProfile(null);
-      }
-    };
     const checkSession = async () => {
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
         if (sessionError) throw sessionError;
-        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setUser(session.user);
+        }
       } catch (err) {
         setError('Failed to check session: ' + err.message);
         console.error(err);
@@ -55,25 +41,21 @@ export const AuthProvider = ({ children }) => {
 
     checkSession();
 
-    // Listen for changes on auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      try {
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
         setUser(session?.user ?? null);
-        setError(null); // Clear any previous errors on state change
-      } catch (err) {
-        setError('Failed to update auth state: ' + err.message);
-        console.error(err);
-      } finally {
-        setLoading(false);
+        // Use navigate instead of window.location.href
+        navigate('/Home');
       }
     });
 
     return () => subscription?.unsubscribe();
-  }, []); // No dependencies needed since supabase is a constant
+  }, [navigate]); // Add navigate to the dependency array
 
   return (
-    <AuthContext.Provider value={{ user, profile,loading, error }}>
-      {children} {/* Render children regardless of loading to handle errors */}
+    <AuthContext.Provider value={{ user, loading, error, supabase }}>
+      {children}
     </AuthContext.Provider>
   );
 };
