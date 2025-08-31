@@ -33,6 +33,16 @@ const LoginPage = () => {
         }
     };
 
+    const handleGoogleLogin = async () => {
+        setError('');
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+        });
+        if (error) {
+            setError(error.message);
+        }
+    };
+
     if (profile) {
         return (
             <div className="login-container">
@@ -82,7 +92,13 @@ const LoginPage = () => {
                     <button type="submit" className="login-btn">
                         Log In
                     </button>
-                    <button type="button" className="login-btn">Login with Google</button>
+                    <button
+                        type="button"
+                        className="login-btn"
+                        onClick={handleGoogleLogin}
+                    >
+                        Login with Google
+                    </button>
                     <a href="#" className="forgot-password">
                         Forgot Password?
                     </a>
