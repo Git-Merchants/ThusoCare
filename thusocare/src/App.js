@@ -61,6 +61,8 @@ function App() {
             } 
           />
           <Route path="/authentication" element={<FaceAuth />} />
+          <Route path="/Home" element={<Home/>} />
+
 
           {/* Protected Routes */}
           <Route 
@@ -79,14 +81,7 @@ function App() {
               </RequireAuth>
             } 
           />
-          <Route 
-            path="/home" 
-            element={
-              <RequireAuth>
-                <Home />
-              </RequireAuth>
-            } 
-          />
+          
         </Routes>
       </AuthProvider>
     </TranslationProvider>
