@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
-// Corrected import paths based on a common project structure
-import LandingPage from './Pages/Landing';
+// Corrected import paths based on a common project structure.
+// Assumes App.jsx is located in a subdirectory of src.
+import LandingPage from './Pages/Landing'; 
 import LoginPage from './Pages/Login';
 import HealthProfile from './Pages/HealthProfile';
 import PatientDashboard from './Pages/PatientProfile';
@@ -17,93 +18,95 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css'; // Global CSS
 
 // Placeholder component for consistent layout
-const AuthLayout = ({ children }) => <div className="auth-layout">{children}</div>;
+const AuthLayout = ({ children }) => 
+    <div className="auth-layout">{children}</div>;
 
-// Component to handle initial redirect for authenticated users
-const RedirectAuthenticated = () => {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
+// This is the main application component that defines all your routes.
+// It does NOT need to be wrapped in <Router> because it is already
+// being rendered inside a single <Router> in your index.js file.
+function App() {
+  return (
+    // The TranslationProvider and AuthProvider should stay here,
+    // as they provide context to all the routes and pages below.
+    <TranslationProvider>
+      <AuthProvider>
+        <Routes>
+          {/* Main Redirect Route */}
+          <Route 
+            path="/" 
+            element={
+              <Navigate 
+                to="/landing" 
+                replace 
+              />
+            } 
+          />
 
-  useEffect(() => {
-    if (!loading && user) {
-      navigate('/Home');
-    }
-  }, [user, loading, navigate]);
+          {/* Public Routes */}
+          <Route path="/landing" element={<LandingPage />} />
+          <Route 
+            path="/login" 
+            element={
+              <AuthLayout>
+                <LoginPage />
+              </AuthLayout>
+            } 
+          />
+          <Route 
+            path="/signup" 
+            element={
+              <AuthLayout>
+                <SignUp />
+              </AuthLayout>
+            } 
+          />
+          <Route path="/authentication" element={<FaceAuth />} />
+          <Route path="/Home" element={<Home/>} />
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  return null; // Render nothing while loading or until redirect
-};
 
-// The RequireAuth component ensures protected routes require authentication
+          {/* Protected Routes */}
+          <Route 
+            path="/health-profile" 
+            element={
+              <RequireAuth>
+                <HealthProfile />
+              </RequireAuth>
+            } 
+          />
+          <Route 
+            path="/patient-dashboard" 
+            element={
+              <RequireAuth>
+                <PatientDashboard />
+              </RequireAuth>
+            } 
+          />
+          
+        </Routes>
+      </AuthProvider>
+    </TranslationProvider>
+  );
+}
+
+
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading && !user) {
+      // Redirect to the login page if the user is not authenticated
       navigate('/login');
     }
   }, [user, loading, navigate]);
 
   if (loading) {
+    // Show a loading indicator while the auth state is being checked
     return <div>Loading...</div>;
   }
 
+  // Render the children (the protected page) if the user is authenticated, otherwise render null
   return user ? children : null;
 };
-
-function App() {
-  return (
-    <TranslationProvider>
-      <AuthProvider>
-        <Routes>
-          {/* Redirect root to landing or Home based on auth state */}
-          <Route path="/" element={<RedirectAuthenticated />} />
-
-          {/* Public Routes */}
-          <Route path="/landing" element={<LandingPage />} />
-          <Route
-            path="/login"
-            element={
-              <AuthLayout>
-                <LoginPage />
-              </AuthLayout>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <AuthLayout>
-                <SignUp />
-              </AuthLayout>
-            }
-          />
-          <Route path="/authentication" element={<FaceAuth />} />
-          <Route path="/Home" element={<Home />} />
-
-          {/* Protected Routes */}
-          <Route
-            path="/health-profile"
-            element={
-              <RequireAuth>
-                <HealthProfile />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/patient-dashboard"
-            element={
-              <RequireAuth>
-                <PatientDashboard />
-              </RequireAuth>
-            }
-          />
-        </Routes>
-      </AuthProvider>
-    </TranslationProvider>
-  );
-}
 
 export default App;
