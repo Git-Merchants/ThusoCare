@@ -322,36 +322,8 @@ useEffect(() => {
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
                             
-                    {/* Debug Information */}
-                    {nearbyPlaces.length > 0 && (
-                        <div className="debug-info">
-                            <h4>Found {nearbyPlaces.length} healthcare facilities:</h4>
-                            <p>Hospitals: {nearbyPlaces.filter(p => p.amenity === 'hospital').length}</p>
-                            <p>Clinics: {nearbyPlaces.filter(p => p.amenity === 'clinic').length}</p>
-                        </div>
-                    )}
-
-                    {/* Legend */}
-                    {nearbyPlaces.length > 0 && (
-                        <div className="map-legend">
-                            <h4>Legend</h4>
-                            <div className="legend-items">
-                                <div className="legend-item">
-                                    <div className="legend-color hospital-color"></div>
-                                    <span>Hospitals (Red circles & markers)</span>
-                                </div>
-                                <div className="legend-item">
-                                    <div className="legend-color clinic-color"></div>
-                                    <span>Clinics (Green circles & markers)</span>
-                                </div>
-                                <div className="legend-item">
-                                    <div className="legend-color user-color"></div>
-                                    <span>Your Location (Blue marker)</span>
-                                </div>
-                            </div>
-                            <p className="legend-note">Circles show 1km service areas around each facility</p>
-                        </div>
-                    )}      {/* User location marker */}
+                   
+                      {/* User location marker */}
                             <Marker 
                                 position={[userLocation.lat, userLocation.lng]}
                                 icon={userIcon}
