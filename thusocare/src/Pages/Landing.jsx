@@ -56,7 +56,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                     <div className="nav-links">
                         {/* Inner links for sections */}
                           <button href="/login" className="signup-btn" onClick={() => handleTranslation()}>Change Language</button>
-                        <a onClick={() => scrollToSection('features')} className="nav-link hidden-sm">Features</a>
+                    
                       
                         {/* Login and Sign Up buttons */}
                         <button href="/login" className="signup-btn" onClick={() => handleLoginClick()}>Login</button>
