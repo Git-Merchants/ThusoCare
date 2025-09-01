@@ -1,8 +1,5 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-
-// Corrected import paths based on a common project structure.
-// Assumes App.jsx is located in a subdirectory of src.
 import LandingPage from './Pages/Landing'; 
 import LoginPage from './Pages/Login';
 import HealthProfile from './Pages/HealthProfile';
@@ -10,6 +7,7 @@ import PatientDashboard from './Pages/PatientProfile';
 import SignUp from './Pages/Signup';
 import Home from './Pages/Home';
 import FaceAuth from './Pages/FaceAuth';
+import VideoCall from './Pages/VideoCall';
 
 // Corrected context import paths
 import { TranslationProvider } from './context/TranslationContext';
@@ -86,6 +84,14 @@ function App() {
                 <Home />
               </RequireAuth>
             } 
+          />
+          <Route
+            path="/video-call/:callId"
+            element={
+              <RequireAuth>
+                <VideoCall />
+              </RequireAuth>
+            }
           />
         </Routes>
       </AuthProvider>

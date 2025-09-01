@@ -1,6 +1,6 @@
 /* General Body and Container Styles */
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Urbanist', 'Inter', sans-serif;
     background-color: #f3f4f6;
     scroll-behavior: smooth;
     margin: 0;
@@ -22,49 +22,25 @@ body {
 
 /* Navigation Bar */
 .navbar {
- background-color: rgba(55, 53, 53, 0); 
-    backdrop-filter: blur(4px); 
-    -webkit-backdrop-filter: blur(12px); 
-    border: 1px solid rgba(55, 53, 53, 0); 
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); 
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
     position: sticky;
     top: 0;
     z-index: 50;
-    border-bottom-left-radius: 30px;
-    border-bottom-right-radius: 30px;
-}
-.user-initial-circle {
-    width: 40px; /* Adjust size as needed */
-    height: 40px;
-    border-radius: 50%;
-    background-color: #3b82f6; /* Blue background color */
-    color: white; /* White text color */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 1.25rem;
-    cursor: pointer;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.user-initial-circle:hover {
-    transform: scale(1.05);
-}
 .navbar-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1rem;
-    position: relative;
 }
 
 .logo {
     font-size: 1.875rem;
     font-weight: bold;
     color: #3b82f6;
-    margin-left: 120px; /* Add space for the language button */
 }
 
 .nav-links {
@@ -109,17 +85,6 @@ body {
 .signup-btn:hover {
     background-color: #2563eb;
 }
-
-.language-btn{
-    background-color: #102f60;
-    color: white;
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    transition: background-color 0.3s;   
-}
-
 
 /* Hero Section */
 .hero-section {
@@ -265,73 +230,31 @@ body {
 
 /* Language Button */
 .language-btn {
-    background-color: #34618e;
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-    margin-top: -30px;
-    border-radius: 999px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    transition: background-color 0.3s;
-}
-
-
-
-.language-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background-color: rgb(249, 249, 249);
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    margin-top: 0.5rem;
-    min-width: 160px;
-    z-index: 1000;
-    overflow: hidden;
-}
-
-.dropdown-item {
-    display: block;
-    width: 100%;
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border: none;
-    background: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 20px;
+    background-color: white;
     color: #4b5563;
+    font-size: 0.9rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
 }
 
-.dropdown-item:hover {
+.language-btn:hover {
     background-color: #f3f4f6;
-    color: #3b82f6;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
 }
 
-.language-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.language-btn svg {
+    color: #6b7280;
 }
 
-/* Close dropdown when clicking outside */
-.language-dropdown:focus-within .dropdown-menu {
-    display: block;
-}
-
-/* User Menu */
-.user-menu {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.user-name {
+.language-btn:hover svg {
     color: #4b5563;
-    font-weight: 600;
 }
 
 /* Responsive Overrides */
@@ -390,17 +313,11 @@ body {
 }
 
 @media (max-width: 768px) {
+    .language-btn span {
+        display: none;
+    }
+    
     .language-btn {
-        position: static;
-        margin-right: 1rem;
-    }
-    
-    .logo {
-        margin-left: 0;
-    }
-    
-    .navbar-content {
-        flex-wrap: wrap;
-        gap: 1rem;
+        padding: 8px;
     }
 }

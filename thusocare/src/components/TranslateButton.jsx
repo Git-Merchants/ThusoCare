@@ -64,3 +64,4 @@ const TranslateButton = ({ text, targetLanguage = 'en', className = '' }) => {
 export default TranslateButton;
 
 
+
