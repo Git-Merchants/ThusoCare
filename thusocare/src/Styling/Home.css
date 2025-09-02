@@ -50,6 +50,7 @@
 .nav-btn {
     display: flex;
     align-items: center;
+    text-decoration: none;
     gap: 0.5rem;
     padding: 0.625rem 1rem;
     border: 1px solid rgba(226, 232, 240, 0.8);
@@ -122,6 +123,7 @@
     height: 2.7rem;
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: #ddd;
+    text-decoration: none;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -139,6 +141,7 @@
 .user-circle:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 12px 0 rgba(59, 130, 246, 0.4);
+    text-decoration: none;
 }
 
 /* Language Dropdown */

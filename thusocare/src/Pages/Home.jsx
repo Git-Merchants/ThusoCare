@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,Link } from 'react-router-dom';
+
 import { createClient } from '@supabase/supabase-js';
 import CallIcon from '../images/call.png';
 import { useAuth } from '../context/AuthContext';
@@ -308,6 +309,13 @@ useEffect(() => {
         };
     }, []);
 
+    const handleQuickHelpClick = () => {
+        navigate('/quick-help');
+    };
+    const handleProfileClick = () => {
+        navigate('/patient-dashboard'); 
+      };
+
     const fetchNearbyPlaces = async (location) => {
         try {
             console.log('Loading hardcoded healthcare facilities for location:', location);
@@ -328,7 +336,7 @@ useEffect(() => {
             setNearbyPlaces(hardcodedPlaces);
         }
     };
-
+   
     const calculateDistance = (point1, point2) => {
         const lat1 = point1.lat;
         const lon1 = point1.lng;
@@ -381,63 +389,8 @@ useEffect(() => {
 
     // Updated handleCallClick function for Home.js
 const handleCallClick = async () => {
-    try {
-        // Add loading state
-        console.log('Starting video call...', { user });
-        
-        // Validate user authentication
-        if (!user || !user.id) {
-            console.error('User not authenticated');
-            alert('Please log in to start a video call');
-            navigate('/login');
-            return;
-        }
-
-        // For now, we'll create a call without a specific receiver
-        // In a real app, you'd typically select a doctor or healthcare provider
-        console.log('Creating video call with user ID:', user.id);
-        
-        // Use the imported service function
-        const { call, channel } = await createVideoCall(null, user.id); // null for receiver_id for now, pass user.id
-        
-        console.log('Call created successfully:', call);
-        console.log('Channel created:', channel);
-
-        // Navigate to video call with the call ID
-        console.log('Attempting to navigate to:', `/video-call/${call.id}`);
-        console.log('Call object:', call);
-        console.log('Call ID:', call.id);
-        
-        // Navigate to video call with the call ID
-        console.log('About to call navigate function');
-        const navigationResult = navigate(`/video-call/${call.id}`);
-        console.log('Navigation result:', navigationResult);
-        
-        // Add a small delay to see if navigation happens
-        setTimeout(() => {
-            console.log('Current location after navigation attempt:', window.location.pathname);
-            console.log('Current URL:', window.location.href);
-        }, 100);
-        
-    } catch (err) {
-        console.error('Error starting video call:', err);
-        console.error('Error details:', {
-            message: err.message,
-            code: err.code,
-            details: err.details,
-            hint: err.hint
-        });
-        
-        // Show user-friendly error message
-        if (err.message?.includes('permission')) {
-            alert('Permission denied. Please check your database permissions.');
-        } else if (err.message?.includes('network')) {
-            alert('Network error. Please check your connection and try again.');
-        } else {
-            alert(`Failed to start video call: ${err.message || 'Unknown error'}`);
-        }
-    }
-};
+    navigate('/video-call/:callId');
+   };
 
     return (
         <div className="home-wrapper">
@@ -497,23 +450,19 @@ const handleCallClick = async () => {
                             <span className="nav-text">Call a Professional</span>
                         </button>
 
-                       
-
                         {/* Quick Help */}
-                        <button className="nav-btn help-btn">
-                            <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                        <button className="nav-btn help-btn"
+                            onClick={handleQuickHelpClick}>
                             <span className="nav-text">Quick Medical Help</span>
                         </button>
 
-
-
                         {/* User Circle */}
                         {user && userProfile && !isLoadingProfile && (
-                            <div className="user-circle" title={`${userProfile.name} ${userProfile.surname || ''}`.trim()}>
+
+                            <div className="user-circle" title={`${userProfile.name} ${userProfile.surname || ''}`.trim()}onClick={handleProfileClick}>
                                 {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
                             </div>
+                            
                         )}
                         
                         {/* Loading indicator for user profile */}
@@ -549,7 +498,7 @@ const handleCallClick = async () => {
                             center={[userLocation.lat, userLocation.lng]}
                             zoom={14}
                             style={{ height: '500px', width: '100%', borderRadius: '12px' }}
-                            // Removed whenCreated and setMap because 'map' is unused.
+                           
                         >
                             <TileLayer
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -591,8 +540,7 @@ const handleCallClick = async () => {
                                                     // Removed setSelectedPlace as it is unused
                                                 }
                                             }}
-                                        />
-                                        
+                                        />     
                                         {/* Marker for the facility */}
                                         <Marker
                                             position={[place.lat, place.lng]}
@@ -609,44 +557,32 @@ const handleCallClick = async () => {
                                                     
                                                     <div className="popup-details">
                                                         <div className="detail-row">
-                                                            <svg className="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                            </svg>
+                                                            
                                                             <span><strong>Distance:</strong> {(distance/1000).toFixed(1)}km away</span>
                                                         </div>
                                                         
                                                         <div className="detail-row">
-                                                            <svg className="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                                <circle cx="12" cy="12" r="10"/>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h8"/>
-                                                            </svg>
+                                                            
                                                             
                                                         </div>
                                                         
                                                         {place.address && place.address !== 'Address not available' && (
                                                             <div className="detail-row">
-                                                                <svg className="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                                                </svg>
+                                                                
                                                                 <span><strong>Address:</strong> {place.address}</span>
                                                             </div>
                                                         )}
                                                         
                                                         {place.phone && (
                                                             <div className="detail-row">
-                                                                <svg className="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                                                                </svg>
+                                                                
                                                                 <span><strong>Phone:</strong> <a href={`tel:${place.phone}`}>{place.phone}</a></span>
                                                             </div>
                                                         )}
                                                         
                                                         {place.website && (
                                                             <div className="detail-row">
-                                                                <svg className="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                                                </svg>
+                                                               
                                                                 <span><strong>Website:</strong> <a href={place.website} target="_blank" rel="noopener noreferrer">Visit Site</a></span>
                                                             </div>
                                                         )}
@@ -654,9 +590,7 @@ const handleCallClick = async () => {
                                                     
                                                     <div className="popup-actions">
                                                         <button className="popup-btn directions-btn">
-                                                            <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"/>
-                                                            </svg>
+                                                            
                                                             Get Directions
                                                         </button>
                                                         <button className="popup-btn contact-btn">
