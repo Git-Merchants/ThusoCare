@@ -1,9 +1,11 @@
 .translation-page-container {
     max-width: 900px;
-    margin: 2rem auto;
+    margin: 5rem ;
     padding: 2rem;
+    margin-top: 340px;
     background-color: #ffffff;
     border-radius: 12px;
+   
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
   
@@ -11,7 +13,7 @@
   h2 {
     font-size: 2rem;
     font-weight: 700;
-    color: #1a237e;
+    color: #3b82f6;
     margin-bottom: 0.5rem;
   }
   
@@ -39,7 +41,7 @@
   
   textarea:focus {
     outline: none;
-    border-color: #1a237e;
+    border-color: #3b82f6;
   }
   
   /* Button styling */
@@ -59,19 +61,19 @@
   }
   
   .translate-btn:first-of-type {
-    background-color: #1a237e;
+    background-color: #3b82f6;
     color: #fff;
     box-shadow: 0 2px 6px rgba(26, 35, 126, 0.3);
   }
   
   .translate-btn:first-of-type:hover:enabled {
-    background-color: #131b67;
+    background-color: #3b82f6;
   }
   
   .translate-btn.secondary {
     background-color: transparent;
-    color: #1a237e;
-    border: 2px solid #1a237e;
+    color: #3b82f6;
+    border: 2px solid #3b82f6;
   }
   
   .translate-btn.secondary:hover:enabled {

@@ -389,7 +389,20 @@ useEffect(() => {
 
     // Updated handleCallClick function for Home.js
 const handleCallClick = async () => {
-    navigate('/video-call/:callId');
+    if (!user) {
+        console.log('No user logged in, redirecting to login');
+        navigate('/login');
+        return;
+    }
+
+    try {
+        const { call } = await createVideoCall(user.id, 1);
+        console.log('Generated callId:', call.id);
+        navigate(`/video-call/${call.id}`);
+    } catch (error) {
+        console.error('Error creating video call:', error);
+        navigate('/video-call/:callId');
+    }
    };
 
     return (
@@ -444,7 +457,7 @@ const handleCallClick = async () => {
                         {/* Call Button */}
                         <button 
                             className="nav-btn call-btn"
-                            onClick={handleCallClick}
+                           onClick={handleCallClick}
                         >
                             <img src={CallIcon} alt="Call" className="callIcon" />
                             <span className="nav-text">Call a Professional</span>

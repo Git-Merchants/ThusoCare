@@ -1,69 +1,99 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-// Initialize Supabase client outside the component to ensure it's a singleton
 const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
+    process.env.REACT_APP_SUPABASE_URL,
+    process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
 const AuthContext = createContext({
-  user: null,
-  loading: true,
-  error: null,
+    user: null,
+    loading: true,
+    error: null,
 });
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate(); // Get the navigate function from React Router
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+    const location = useLocation(); // Get current route
 
-  useEffect(() => {
-    // Check active sessions and sets the user
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) throw sessionError;
-        
-        if (session?.user) {
-          setUser(session.user);
-        }
-      } catch (err) {
-        setError('Failed to check session: ' + err.message);
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    useEffect(() => {
+        console.log('AuthContext useEffect triggered');
+        const checkSession = async () => {
+            try {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError) {
+                    console.error('Session error:', sessionError);
+                    throw new Error('Failed to check session: ' + sessionError.message);
+                }
+                console.log('Session checked:', session?.user ? 'User found' : 'No user');
+                setUser(session?.user ?? null);
+            } catch (err) {
+                console.error('Error in checkSession:', err);
+                setError('Authentication error: ' + err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    checkSession();
+        const timeout = setTimeout(() => {
+            if (loading) {
+                console.error('Session check timed out');
+                setError('Session check timed out');
+                setLoading(false);
+            }
+        }, 10000);
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        setUser(session?.user ?? null);
-        // Use navigate instead of window.location.href
-        navigate('/Home');
-      }
-    });
+        checkSession();
 
-    return () => subscription?.unsubscribe();
-  }, [navigate]); // Add navigate to the dependency array
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event, 'Current path:', location.pathname);
+            if (event === 'SIGNED_IN') {
+                setUser(session?.user ?? null);
+                // Only navigate to /home if on an unauthenticated route
+                if (['/login', '/signup', '/landing', '/'].includes(location.pathname)) {
+                    console.log('Navigating to /home from unauthenticated route');
+                    navigate('/home', { replace: true });
+                }
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+                console.log('Navigating to /login on SIGNED_OUT');
+                navigate('/login', { replace: true });
+            }
+        });
 
-  return (
-    <AuthContext.Provider value={{ user, loading, error, supabase }}>
-      {children}
-    </AuthContext.Provider>
-  );
+        const refreshInterval = setInterval(async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
+                setUser(session?.user ?? null);
+            } catch (err) {
+                console.error('Error refreshing session:', err);
+                setError('Session refresh error: ' + err.message);
+            }
+        }, 5 * 60 * 1000);
+
+        return () => {
+            subscription?.unsubscribe();
+            clearTimeout(timeout);
+            clearInterval(refreshInterval);
+        };
+    }, [navigate, location.pathname]);
+
+    return (
+        <AuthContext.Provider value={{ user, loading, error, supabase }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 };

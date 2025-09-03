@@ -5,9 +5,28 @@ const supabase = createClient(
   process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
-export const createVideoCall = async (receiverId, userId) => {
+export const createVideoCall = async (userId, medicId = 1) => {
   try {
-    console.log('Creating video call with:', { receiverId, userId });
+    console.log('Creating video call for user:', userId, 'and medicId:', medicId);
+    
+    // Fetch the medic's user_id from the medics table
+    const { data: medic, error: medicError } = await supabase
+      .from('medics')
+      .select('user_id')
+      .eq('id', medicId)
+      .single();
+
+    if (medicError) {
+      console.error('Error fetching medic:', medicError);
+      throw medicError;
+    }
+
+    if (!medic || !medic.user_id) {
+      throw new Error('Medic not found or no associated user_id');
+    }
+
+    const receiverId = medic.user_id;
+    console.log('Resolved receiverId (medic user_id):', receiverId);
     
     // Generate a unique room ID
     const roomId = crypto.randomUUID();
@@ -212,7 +231,7 @@ export const canUserJoinCall = async (callId, userId) => {
   try {
     const call = await getVideoCallDetails(callId);
     
-    // Check if user is either caller or receiver
+    // Check if user is either caller or receiver (medic)
     const canJoin = call.caller_id === userId || call.receiver_id === userId;
     
     return {
