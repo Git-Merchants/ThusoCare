@@ -144,6 +144,27 @@
     text-decoration: none;
 }
 
+.logout-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: scale(1.05);
+}
+
 /* Language Dropdown */
 .language-dropdown {
     position: relative;
@@ -284,6 +305,11 @@
         font-size: 0.875rem;
     }
 
+    .logout-btn {
+        width: 2rem;
+        height: 2rem;
+    }
+
     .main-content {
         padding-top: 4.5rem;
     }
@@ -325,6 +351,11 @@
         width: 2rem;
         height: 2rem;
         font-size: 0.75rem;
+    }
+
+    .logout-btn {
+        width: 1.75rem;
+        height: 1.75rem;
     }
 }
 

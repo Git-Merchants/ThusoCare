@@ -78,7 +78,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                     </button>
                 </div>
                 <div className="hero-image">
-                    <img src="./images/doctor.jpg" alt="Healthcare Illustration" />
+                    <img src="../images/doctor.jpg" alt="Healthcare Illustration" />
                 </div>
             </header>
 

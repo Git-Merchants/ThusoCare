@@ -20,7 +20,8 @@ const Home = () => {
     const [nearbyPlaces, setNearbyPlaces] = useState([]);
     const [userProfile, setUserProfile] = useState(null);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-    
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+   
     // Hardcoded healthcare facilities around Johannesburg
     const hardcodedPlaces = [
         {
@@ -151,6 +152,7 @@ const Home = () => {
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
     const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
 
     // Custom icons
     const hospitalIcon = new Icon({
@@ -314,7 +316,17 @@ useEffect(() => {
     };
     const handleProfileClick = () => {
         navigate('/patient-dashboard'); 
-      };
+    };
+
+    const handleLogout = async () => {
+        try {
+            await supabase.auth.signOut();
+            navigate('/landing');
+        } catch (error) {
+            console.error('Error logging out:', error);
+            navigate('/landing'); // Navigate anyway
+        }
+    };
 
     const fetchNearbyPlaces = async (location) => {
         try {
@@ -472,7 +484,7 @@ const handleCallClick = async () => {
                         {/* User Circle */}
                         {user && userProfile && !isLoadingProfile && (
 
-                            <div className="user-circle" title={`${userProfile.name} ${userProfile.surname || ''}`.trim()}onClick={handleProfileClick}>
+                            <div className="user-circle" title={`${userProfile.name} ${userProfile.surname || ''}`.trim()} onClick={handleProfileClick}>
                                 {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
                             </div>
                             
@@ -497,6 +509,19 @@ const handleCallClick = async () => {
                             <div className="user-circle" title="Debug: No user">
                                 ?
                             </div>
+                        )}
+
+                        {/* Logout Button */}
+                        {user && (
+                            <button 
+                                className="logout-btn"
+                                onClick={handleLogout}
+                                title="Logout"
+                            >
+                                <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                            </button>
                         )}
                     </div>
                 </div>

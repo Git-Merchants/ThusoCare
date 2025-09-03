@@ -21,12 +21,25 @@ const LoginPage = () => {
             setError(error.message);
             return;
         }
-        // Fetch user profile from 'users' table
+        // Check if user is a medic first
+        const { data: medicData, error: medicError } = await supabase
+            .from('medics')
+            .select('name, password')
+            .eq('name', email)
+            .single();
+        
+        if (medicData && medicData.password === password) {
+            navigate('/doc-dashboard');
+            return;
+        }
+        
+        // If not a medic, check regular users table
         const { data: userData, error: userError } = await supabase
             .from('users')
             .select('name, surname')
             .eq('email', email)
             .single();
+        
         if (userError || !userData) {
             setError('Login successful, but could not fetch user profile.');
         } else {
