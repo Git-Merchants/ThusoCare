@@ -9,6 +9,7 @@ import Home from './Pages/Home';
 import FaceAuth from './Pages/FaceAuth';
 import VideoCall from './Pages/VideoCall';
 import QuickMedicHelp from './Pages/QuickMedicHelp';
+import DocDashboard from './Pages/DocDashboard';
 import { TranslationProvider } from './context/TranslationContext';
 import { useAuth } from './context/AuthContext'; // Only import useAuth, not AuthProvider
 import './App.css';
@@ -145,9 +146,19 @@ function App() {
             </RequireAuth>
           }
         />
+
+        {/*Doctor dashboard route*/}
+        <Route
+          path="/doc-dashboard"
+          element={
+            <AuthLayout>
+              <DocDashboard />
+            </AuthLayout>
+          }
+        />
       </Routes>
     </TranslationProvider>
   );
-}
+} 
 
 export default App;
