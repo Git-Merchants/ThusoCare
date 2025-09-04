@@ -9,6 +9,7 @@ const supabase = createClient(
   process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
+
 const HealthProfile = () => {
   const { user, loading, error: authError } = useAuth(); // Fixed usage and added loading/error
   const [healthData, setHealthData] = useState({
@@ -31,6 +32,49 @@ const HealthProfile = () => {
   const [newMedication, setNewMedication] = useState({ name: '', dosage: '', frequency: '' });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [existingRecord, setExistingRecord] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Load existing health data
+  React.useEffect(() => {
+    const loadHealthData = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('info')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data && !error) {
+          setExistingRecord(data);
+          setIsEditing(true);
+          setHealthData({
+            bloodType: data.blood_type || '',
+            chronicDiseases: data.chronic_diseases ? data.chronic_diseases.split(', ').filter(d => d.trim()) : [],
+            allergies: data.allergies ? data.allergies.split(', ').filter(a => a.trim()) : [],
+            emergencyContact: {
+              name: data.emergency_contact || '',
+              relationship: data.relationship || '',
+              phone: ''
+            },
+            medications: data.medication ? data.medication.split('; ').map(med => {
+              const parts = med.match(/^(.+) \((.+), (.+)\)$/);
+              return parts ? { name: parts[1], dosage: parts[2], frequency: parts[3] } : { name: med, dosage: '', frequency: '' };
+            }) : [],
+            height: data.height || '',
+            weight: data.weight || '',
+            additionalNotes: data.additional_notes || ''
+          });
+        }
+      } catch (err) {
+        console.error('Error loading health data:', err);
+      }
+    };
+    
+    loadHealthData();
+  }, [user]);
 
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
 
@@ -155,19 +199,39 @@ const HealthProfile = () => {
     e.preventDefault();
     
     try {
-      const { error } = await supabase.from('info').insert({
+      // Get the current session to ensure user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('You must be logged in to save your health profile');
+      }
+
+      const dataToSave = {
         user_id: user.id,
         height: healthData.height ? parseFloat(healthData.height) : null,
         weight: healthData.weight ? parseFloat(healthData.weight) : null,
-        blood_type: healthData.bloodType,
-        chronic_diseases: healthData.chronicDiseases.join(', '),
-        allergies: healthData.allergies.join(', '),
-        medication: healthData.medications.map(med => `${med.name} (${med.dosage}, ${med.frequency})`).join('; '),
-        emergency_contact: healthData.emergencyContact.name,
-        relationship: healthData.emergencyContact.relationship,
-        phone_number: healthData.emergencyContact.phone,
-        additional_notes: healthData.additionalNotes
-      });
+        blood_type: healthData.bloodType || null,
+        chronic_diseases: healthData.chronicDiseases.join(', ').substring(0, 255),
+        allergies: healthData.allergies.join(', ').substring(0, 255),
+        medication: healthData.medications.map(med => `${med.name} (${med.dosage}, ${med.frequency})`).join('; ').substring(0, 500),
+        emergency_contact: healthData.emergencyContact.name.substring(0, 100),
+        relationship: healthData.emergencyContact.relationship.substring(0, 50),
+        additional_notes: healthData.additionalNotes.substring(0, 1000)
+      };
+
+      let error;
+      if (isEditing && existingRecord) {
+        // Update existing record
+        const result = await supabase
+          .from('info')
+          .update(dataToSave)
+          .eq('id', existingRecord.id);
+        error = result.error;
+      } else {
+        // Insert new record
+        const result = await supabase.from('info').insert(dataToSave);
+        error = result.error;
+      }
 
       if (error) throw error;
 
@@ -204,7 +268,7 @@ const HealthProfile = () => {
   return (
     <div className="health-profile-container">
       <div className="health-profile-card">
-        <h1 className="health-profile-title">Your Health Profile</h1>
+        <h1 className="health-profile-title">{isEditing ? 'Edit Your Health Profile' : 'Your Health Profile'}</h1>
         <p className="health-profile-subtitle">
           Please provide your health information to help us deliver better care.
         </p>

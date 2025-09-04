@@ -1438,3 +1438,135 @@
 .patient-record-card {
   cursor: pointer;
 }
+/* Logout Button Styles */
+.logout-btn {
+  background: #fff;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: rgb(77, 12, 12);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-left: 0.75rem;
+}
+
+
+.logout-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.logout-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+/* Add styles for the active call section */
+.active-call-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.active-call-section .section-title {
+  color: white;
+  margin-bottom: 15px;
+}
+
+.call-notification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.caller-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.caller-info .avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  color: white;
+}
+
+.caller-details h3 {
+  margin: 0;
+  font-size: 18px;
+  color: white;
+}
+
+.caller-details p {
+  margin: 5px 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+.caller-details small {
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.call-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.answer-btn, .decline-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.answer-btn {
+  background: #10b981;
+  color: white;
+}
+
+.answer-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.decline-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.decline-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+  .call-notification {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .call-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}

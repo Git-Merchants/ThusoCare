@@ -23,7 +23,8 @@ const LoginPage = () => {
             // Store logged-in doctor info
             localStorage.setItem('loggedInDoctor', JSON.stringify({
                 name: medicData.name,
-                surname: medicData.surname || ''
+                surname: medicData.surname || '',
+                email: medicData.email
             }));
             navigate('/doc-dashboard');
             return;
@@ -60,7 +61,7 @@ const LoginPage = () => {
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/Home` 
+                    redirectTo: 'http://localhost:3000/Home'
                 }
             });
 

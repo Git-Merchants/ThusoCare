@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, supabase }}>
+    <AuthContext.Provider value={{ user: currentUser, currentUser, loading, supabase }}>
       {!loading && children}
     </AuthContext.Provider>
   );
@@ -67,5 +67,5 @@ export const useAuth = () => {
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+  return { ...context, user: context.currentUser };
 };

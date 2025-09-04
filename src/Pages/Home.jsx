@@ -4,7 +4,6 @@ import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useNavigate,Link } from 'react-router-dom';
 
-import { createClient } from '@supabase/supabase-js';
 import CallIcon from '../images/call.png';
 import { useAuth } from '../context/AuthContext';
 import { createVideoCall } from '../services/videoCallService';
@@ -23,120 +22,10 @@ const Home = () => {
     const [userProfile, setUserProfile] = useState(null);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
    
-    // Hardcoded healthcare facilities around Johannesburg
-    const hardcodedPlaces = [
-        {
-            id: 'hospital-1',
-            name: 'Charlotte Maxeke Johannesburg Academic Hospital',
-            lat: -26.1844,
-            lng: 28.0334,
-            amenity: 'hospital',
-            type: 'hospital',
-            phone: '+27 11 488 4911',
-            website: 'https://www.wits.ac.za/clinicalmed/departments/surgery/divisions/orthopaedic-surgery/about-us/facilities-/charlotte-maxeke-johannesburg-academic-hospital/',
-            address: 'Parktown, Johannesburg, 2193'
-        },
-        {
-            id: 'hospital-2',
-            name: 'Helen Joseph Hospital',
-            lat: -26.1622,
-            lng: 27.9967,
-            amenity: 'hospital',
-            type: 'hospital',
-            phone: '+27 11 535 3000',
-            website: 'https://www.gauteng.gov.za/',
-            address: 'Perth Road, Auckland Park, Johannesburg, 2092'
-        },
-        {
-            id: 'hospital-3',
-            name: 'Chris Hani Baragwanath Academic Hospital',
-            lat: -26.2489,
-            lng: 27.9083,
-            amenity: 'hospital',
-            type: 'hospital',
-            phone: '+27 11 933 8000',
-            website: 'https://www.gauteng.gov.za/',
-            address: 'Chris Hani Road, Diepkloof, Soweto, 1864'
-        },
-        {
-            id: 'hospital-4',
-            name: 'Tara Hospital',
-            lat: -26.1422,
-            lng: 28.0589,
-            amenity: 'hospital',
-            type: 'hospital',
-            phone: '+27 11 535 3000',
-            website: 'https://www.facebook.com/TaraHospitalofficial/',
-            address: 'Parktown, Johannesburg, 2193'
-        },
-        {
-            id: 'clinic-1',
-            name: 'Hillbrow Community Health Centre',
-            lat: -26.1897,
-            lng: 28.0444,
-            amenity: 'clinic',
-            type: 'clinic',
-            phone: '+27 11 720 7000',
-            website: null,
-            address: 'Hillbrow, Johannesburg, 2001'
-        },
-        {
-            id: 'clinic-2',
-            name: 'Yeoville Community Health Centre',
-            lat: -26.1856,
-            lng: 28.0589,
-            amenity: 'clinic',
-            type: 'clinic',
-            phone: '+27 11 720 7000',
-            website: null,
-            address: 'Yeoville, Johannesburg, 2198'
-        },
-        {
-            id: 'clinic-3',
-            name: 'Alexandra Community Health Centre',
-            lat: -26.1089,
-            lng: 28.0844,
-            amenity: 'clinic',
-            type: 'clinic',
-            phone: '+27 11 720 7000',
-            website: null,
-            address: 'Alexandra, Johannesburg, 2090'
-        },
-        {
-            id: 'clinic-4',
-            name: 'Sandton Community Health Centre',
-            lat: -26.1089,
-            lng: 28.0589,
-            amenity: 'clinic',
-            type: 'clinic',
-            phone: '+27 11 720 7000',
-            website: null,
-            address: 'Sandton, Johannesburg, 2196'
-        },
-        {
-            id: 'hospital-5',
-            name: 'Milpark Hospital',
-            lat: -26.1897,
-            lng: 28.0334,
-            amenity: 'hospital',
-            type: 'hospital',
-            phone: '+27 11 480 5600',
-            website: 'https://www.netcare.co.za/netcare-facilities/netcare-milpark-hospital',
-            address: '9 Guild Road, Parktown, Johannesburg, 2193'
-        },
-        {
-            id: 'hospital-6',
-            name: 'Netcare Rosebank Hospital',
-            lat: -26.1422,
-            lng: 28.0444,
-            amenity: 'hospital',
-            type: 'hospital',
-            phone: '+27 11 328 0500',
-            website: 'https://www.netcare.co.za/',
-            address: 'Oxford Road, Rosebank, Johannesburg, 2196'
-        }
-    ];
+
 
     // Debug: Log user data when it changes
     useEffect(() => {
@@ -315,7 +204,7 @@ useEffect(() => {
         navigate('/quick-help');
     };
     const handleProfileClick = () => {
-        navigate('/landing'); //change back
+        navigate('/health-profile');
     };
 
     const handleLogout = async () => {
@@ -330,22 +219,58 @@ useEffect(() => {
 
     const fetchNearbyPlaces = async (location) => {
         try {
-            console.log('Loading hardcoded healthcare facilities for location:', location);
+            console.log('Fetching nearby healthcare facilities for location:', location);
             
-            // Filter hardcoded places to show only those within reasonable distance
-            const filteredPlaces = hardcodedPlaces.filter(place => {
-                const distance = calculateDistance(location, { lat: place.lat, lng: place.lng });
-                // Show places within 50km radius
-                return distance <= 50000;
+            // Use Overpass API to find hospitals and clinics near user location
+            const radius = 10000; // 10km radius
+            const overpassQuery = `
+                [out:json][timeout:25];
+                (
+                  node["amenity"="hospital"](around:${radius},${location.lat},${location.lng});
+                  node["amenity"="clinic"](around:${radius},${location.lat},${location.lng});
+                  way["amenity"="hospital"](around:${radius},${location.lat},${location.lng});
+                  way["amenity"="clinic"](around:${radius},${location.lat},${location.lng});
+                );
+                out center;
+            `;
+            
+            const response = await fetch('https://overpass-api.de/api/interpreter', {
+                method: 'POST',
+                body: overpassQuery
             });
             
-            console.log('Filtered places within range:', filteredPlaces);
-            setNearbyPlaces(filteredPlaces);
+            if (!response.ok) {
+                throw new Error('Failed to fetch from Overpass API');
+            }
+            
+            const data = await response.json();
+            
+            const places = data.elements.map(element => {
+                const lat = element.lat || element.center?.lat;
+                const lng = element.lon || element.center?.lon;
+                
+                return {
+                    id: element.id,
+                    name: element.tags?.name || `${element.tags?.amenity} facility`,
+                    lat: lat,
+                    lng: lng,
+                    amenity: element.tags?.amenity,
+                    type: element.tags?.amenity,
+                    phone: element.tags?.phone || null,
+                    website: element.tags?.website || null,
+                    address: element.tags?.['addr:full'] || 
+                            `${element.tags?.['addr:street'] || ''} ${element.tags?.['addr:city'] || ''}`.trim() || 
+                            'Address not available'
+                };
+            }).filter(place => place.lat && place.lng);
+            
+            console.log('Found places from API:', places);
+            
+            setNearbyPlaces(places);
             
         } catch (error) {
-            console.error('Error loading healthcare facilities:', error);
-            // Fallback to all hardcoded places if there's an error
-            setNearbyPlaces(hardcodedPlaces);
+            console.error('Error fetching healthcare facilities:', error);
+            setNearbyPlaces([]);
         }
     };
    
@@ -399,34 +324,25 @@ useEffect(() => {
         return amenity === 'hospital' ? hospitalIcon : clinicIcon;
     };
 
-    // Updated handleCallClick function for Home.js
-    const handleCallClick = async () => {
-        console.log('handleCallClick called');
-        console.log('User state:', user);
-        
-        if (!user) {
-            console.log('No user logged in, redirecting to login');
+    const handleCallClick = () => {
+        if (!user?.id) {
             alert('Please log in to start a video call');
-            navigate('/login');
             return;
         }
-
-        try {
-            console.log('Creating video call for user:', user.id);
-            const result = await createVideoCall(user.id, 1);
-            console.log('Video call service result:', result);
-            
-            if (result && result.call) {
-                console.log('Video call created successfully:', result.call);
-                console.log('Navigating to:', `/video-call/${result.call.id}`);
-                navigate(`/video-call/${result.call.id}`);
-            } else {
-                throw new Error('Invalid response from video call service');
-            }
-        } catch (error) {
-            console.error('Error creating video call:', error);
-            alert(`Failed to start video call: ${error.message}`);
-        }
+        
+        const { roomId } = createVideoCall();
+        
+        // Store caller info for doctor to see
+        const callerInfo = {
+            name: userProfile?.name || user.email?.split('@')[0] || 'User',
+            surname: userProfile?.surname || '',
+            email: user.email,
+            roomId: roomId,
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('activeCall', JSON.stringify(callerInfo));
+        navigate(`/video-call/${roomId}`);
     };
 
     return (
@@ -685,6 +601,22 @@ useEffect(() => {
                     
                 </div>
             </div>
+
+            {/* Error Modal */}
+            {showErrorModal && (
+                <div className="modal-overlay">
+                    <div className="error-modal">
+                        <h3>Sorry</h3>
+                        <p>{errorMessage}</p>
+                        <button 
+                            className="modal-btn"
+                            onClick={() => setShowErrorModal(false)}
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
