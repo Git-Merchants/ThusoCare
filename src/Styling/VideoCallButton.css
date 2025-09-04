@@ -1,0 +1,30 @@
+.video-call-btn {
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.video-call-btn:hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+}
+
+.video-call-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.video-call-btn:disabled:hover {
+  background: #9ca3af;
+  transform: none;
+}

@@ -1,0 +1,143 @@
+.translation-page-container {
+    max-width: 900px;
+    margin: 5rem ;
+    padding: 2rem;
+    margin-top: 340px;
+    background-color: #ffffff;
+    border-radius: 12px;
+   
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* Header and paragraph styling */
+  h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+  
+  /* Form and textarea styling */
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  textarea {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    transition: border-color 0.2s ease-in-out;
+  }
+  
+  textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+  
+  /* Button styling */
+  .translate-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .translate-btn:disabled {
+    background-color: #a7a9ac;
+    cursor: not-allowed;
+  }
+  
+  .translate-btn:first-of-type {
+    background-color: #3b82f6;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(26, 35, 126, 0.3);
+  }
+  
+  .translate-btn:first-of-type:hover:enabled {
+    background-color: #3b82f6;
+  }
+  
+  .translate-btn.secondary {
+    background-color: transparent;
+    color: #3b82f6;
+    border: 2px solid #3b82f6;
+  }
+  
+  .translate-btn.secondary:hover:enabled {
+    background-color: #e8eaf6;
+  }
+  
+  /* Section styling */
+  section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+  }
+  
+  section:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Result list styling */
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  li {
+    margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #eceff1;
+  }
+  
+  li strong {
+    color: #1a237e;
+  }
+  
+  /* Error message styling */
+  .error {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  
+  /* Responsive design adjustments */
+  @media (max-width: 600px) {
+    .translation-page-container {
+      padding: 1.5rem;
+      margin: 1rem;
+    }
+  
+    .translate-btn {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+  }
+  
