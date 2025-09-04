@@ -2,10 +2,15 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
+// Use global supabase client to avoid multiple instances
+let supabase;
+if (!window.supabaseClient) {
+  window.supabaseClient = createClient(
+    process.env.REACT_APP_SUPABASE_URL,
+    process.env.REACT_APP_SUPABASE_ANON_KEY
+  );
+}
+supabase = window.supabaseClient;
 
 const AuthContext = createContext();
 
@@ -25,6 +30,7 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.error('Session error:', err);
+        setCurrentUser(null);
       } finally {
         setLoading(false);
       }
@@ -35,9 +41,11 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes (similar to onAuthStateChanged)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
+        console.log('Auth state changed:', event, session?.user);
         setCurrentUser(session?.user ?? null);
-        setLoading(false);
+        if (event !== 'INITIAL_SESSION') {
+          setLoading(false);
+        }
       }
     );
 

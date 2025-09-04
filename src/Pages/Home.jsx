@@ -150,15 +150,8 @@ const Home = () => {
         }
     }, [user]);
 
-    // Use global supabase client to avoid multiple instances
-    let supabase;
-    if (!window.supabaseClient) {
-        window.supabaseClient = createClient(
-            process.env.REACT_APP_SUPABASE_URL,
-            process.env.REACT_APP_SUPABASE_ANON_KEY
-        );
-    }
-    supabase = window.supabaseClient;
+    // Use existing global supabase client
+    const supabase = window.supabaseClient;
     
 
     // Custom icons
