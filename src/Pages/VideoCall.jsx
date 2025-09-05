@@ -18,6 +18,7 @@ const VideoCall = () => {
   const [remoteUserId, setRemoteUserId] = useState(null);
   
   const navigate = useNavigate();
+  const isDoctor = localStorage.getItem('loggedInDoctor');
 
   useEffect(() => {
     const setupCall = async () => {
@@ -212,7 +213,7 @@ const VideoCall = () => {
     return (
       <div className="video-call-container waiting-room">
         <div className="waiting-content">
-          <h1>Connecting to Healthcare Professional</h1>
+          <h1>Connecting to Call</h1>
           <div className="local-preview">
             <video ref={localVideoRef} autoPlay muted style={{width: '300px', height: '200px', borderRadius: '8px'}} />
             <p>Your camera preview</p>
