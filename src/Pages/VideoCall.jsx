@@ -10,10 +10,12 @@ const VideoCall = () => {
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
   const channelRef = useRef(null);
+  const userIdRef = useRef(Math.random().toString(36).substr(2, 9));
   
   const [isConnected, setIsConnected] = useState(false);
   const [isWaiting, setIsWaiting] = useState(true);
   const [error, setError] = useState(null);
+  const [remoteUserId, setRemoteUserId] = useState(null);
   
   const navigate = useNavigate();
 
@@ -72,12 +74,14 @@ const VideoCall = () => {
       channelRef.current = supabase
         .channel(`room-${callId}`)
         .on('broadcast', { event: 'signal' }, ({ payload }) => {
-          handleSignal(payload);
+          if (payload.userId !== userIdRef.current) {
+            handleSignal(payload);
+          }
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
             setTimeout(() => {
-              sendSignal({ type: 'user-joined' });
+              sendSignal({ type: 'user-joined', userId: userIdRef.current });
             }, 1000);
           }
         });
@@ -88,16 +92,18 @@ const VideoCall = () => {
         channelRef.current.send({
           type: 'broadcast',
           event: 'signal',
-          payload: data
+          payload: { ...data, userId: userIdRef.current }
         });
       }
     };
 
     const handleSignal = async (signal) => {
       try {
+        const pc = peerConnectionRef.current;
         switch (signal.type) {
           case 'user-joined':
-            if (peerConnectionRef.current.signalingState === 'stable') {
+            setRemoteUserId(signal.userId);
+            if (userIdRef.current < signal.userId && pc.signalingState === 'stable') {
               createOffer();
             }
             break;
@@ -128,9 +134,10 @@ const VideoCall = () => {
 
     const handleOffer = async (offer) => {
       try {
-        await peerConnectionRef.current.setRemoteDescription(offer);
-        const answer = await peerConnectionRef.current.createAnswer();
-        await peerConnectionRef.current.setLocalDescription(answer);
+        const pc = peerConnectionRef.current;
+        await pc.setRemoteDescription(offer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
         sendSignal({ type: 'answer', answer });
       } catch (error) {
         console.error('Error handling offer:', error);
