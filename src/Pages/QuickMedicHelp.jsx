@@ -423,6 +423,7 @@ export default function QuickMedicHelp() {
 
   return (
     <div className="translation-page-container" style={{ maxWidth: 900, margin: '0 auto' }}>
+      <button className="back-btn" onClick={() => window.history.back()}>← Back</button>
       <h2>Advanced Medical Assistant</h2>
       <p>
         Describe your health concern in detail. Our enhanced tool will analyze your situation and provide 
