@@ -324,25 +324,25 @@ useEffect(() => {
         return amenity === 'hospital' ? hospitalIcon : clinicIcon;
     };
 
-    const handleCallClick = () => {
-        if (!user?.id) {
-            alert('Please log in to start a video call');
-            return;
+    const handleCallClick = async () => {
+        try {
+            const { roomId } = await createVideoCall();
+            
+            // Store caller info for doctor to see
+            const callerInfo = {
+                name: userProfile?.name || user?.email?.split('@')[0] || 'User',
+                surname: userProfile?.surname || '',
+                email: user?.email || 'No email provided',
+                roomId: roomId,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('activeCall', JSON.stringify(callerInfo));
+            navigate(`/video-call/${roomId}`);
+        } catch (error) {
+            console.error('Failed to create video call:', error);
+            alert('Failed to start video call. Please try again.');
         }
-        
-        const { roomId } = createVideoCall();
-        
-        // Store caller info for doctor to see
-        const callerInfo = {
-            name: userProfile?.name || user.email?.split('@')[0] || 'User',
-            surname: userProfile?.surname || '',
-            email: user.email,
-            roomId: roomId,
-            timestamp: new Date().toISOString()
-        };
-        
-        localStorage.setItem('activeCall', JSON.stringify(callerInfo));
-        navigate(`/video-call/${roomId}`);
     };
 
     return (
