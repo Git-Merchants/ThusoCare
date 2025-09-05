@@ -16,6 +16,7 @@ const VideoCall = () => {
   const [isWaiting, setIsWaiting] = useState(true);
   const [error, setError] = useState(null);
   const [remoteUserId, setRemoteUserId] = useState(null);
+  const [hasCreatedOffer, setHasCreatedOffer] = useState(false);
   
   const navigate = useNavigate();
   const isDoctor = localStorage.getItem('loggedInDoctor');
@@ -101,21 +102,30 @@ const VideoCall = () => {
     const handleSignal = async (signal) => {
       try {
         const pc = peerConnectionRef.current;
+        if (!pc) return;
+        
         switch (signal.type) {
           case 'user-joined':
             setRemoteUserId(signal.userId);
-            if (userIdRef.current < signal.userId && pc.signalingState === 'stable') {
+            if (userIdRef.current < signal.userId && pc.signalingState === 'stable' && !hasCreatedOffer) {
+              setHasCreatedOffer(true);
               createOffer();
             }
             break;
           case 'offer':
-            await handleOffer(signal.offer);
+            if (pc.signalingState === 'stable') {
+              await handleOffer(signal.offer);
+            }
             break;
           case 'answer':
-            await handleAnswer(signal.answer);
+            if (pc.signalingState === 'have-local-offer') {
+              await handleAnswer(signal.answer);
+            }
             break;
           case 'ice-candidate':
-            await handleIceCandidate(signal.candidate);
+            if (pc.remoteDescription) {
+              await handleIceCandidate(signal.candidate);
+            }
             break;
         }
       } catch (error) {
@@ -147,7 +157,10 @@ const VideoCall = () => {
 
     const handleAnswer = async (answer) => {
       try {
-        await peerConnectionRef.current.setRemoteDescription(answer);
+        const pc = peerConnectionRef.current;
+        if (pc.signalingState === 'have-local-offer') {
+          await pc.setRemoteDescription(answer);
+        }
       } catch (error) {
         console.error('Error handling answer:', error);
       }
@@ -155,7 +168,10 @@ const VideoCall = () => {
 
     const handleIceCandidate = async (candidate) => {
       try {
-        await peerConnectionRef.current.addIceCandidate(candidate);
+        const pc = peerConnectionRef.current;
+        if (pc.remoteDescription && pc.signalingState !== 'closed') {
+          await pc.addIceCandidate(candidate);
+        }
       } catch (error) {
         console.error('Error handling ICE candidate:', error);
       }
