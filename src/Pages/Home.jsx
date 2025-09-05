@@ -27,6 +27,30 @@ const Home = () => {
    
 
 
+    // Handle OAuth callback
+    useEffect(() => {
+        const handleAuthCallback = async () => {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            
+            if (accessToken) {
+                console.log('Processing OAuth callback...');
+                try {
+                    const { data, error } = await supabase.auth.getUser(accessToken);
+                    if (error) throw error;
+                    
+                    // Clear the hash from URL
+                    window.history.replaceState(null, null, window.location.pathname);
+                    console.log('OAuth login successful');
+                } catch (error) {
+                    console.error('OAuth callback error:', error);
+                }
+            }
+        };
+        
+        handleAuthCallback();
+    }, []);
+
     // Debug: Log user data when it changes
     useEffect(() => {
         if (user) {

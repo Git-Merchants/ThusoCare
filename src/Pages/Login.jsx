@@ -67,7 +67,7 @@ const LoginPage = () => {
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: 'http://localhost:3000/Home'
+                    redirectTo: `${window.location.origin}/Home`
                 }
             });
 
@@ -76,10 +76,8 @@ const LoginPage = () => {
                 return;
             }
 
-            // Navigate after successful login
-            if (data) {
-                navigate('/Home');
-            }
+            // OAuth will handle redirect automatically via Supabase
+            // No need to navigate here as user will be redirected
         } catch (err) {
             console.error('Google login error:', err);
             setError('An error occurred during Google login');

@@ -212,7 +212,13 @@ const VideoCallSimple = () => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
     }
-    navigate('/Home');
+    // Navigate to appropriate dashboard based on user type
+    const isDoctor = localStorage.getItem('loggedInDoctor');
+    if (isDoctor) {
+      navigate('/doc-dashboard');
+    } else {
+      navigate('/home');
+    }
   };
 
   if (error) {
@@ -221,8 +227,11 @@ const VideoCallSimple = () => {
         <div className="error-content">
           <h1>Call Error</h1>
           <p>{error}</p>
-          <button className="end-call-btn" onClick={() => navigate('/Home')}>
-            Return to Home
+          <button className="end-call-btn" onClick={() => {
+            const isDoctor = localStorage.getItem('loggedInDoctor');
+            navigate(isDoctor ? '/doc-dashboard' : '/home');
+          }}>
+            Return to Dashboard
           </button>
         </div>
       </div>
