@@ -18,6 +18,27 @@ const VideoCallSimple = () => {
   
   const navigate = useNavigate();
 
+  const createOffer = async () => {
+    const pc = peerConnectionRef.current;
+    if (!pc) return;
+
+    try {
+      console.log('Creating offer');
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'webrtc',
+          payload: { type: 'offer', offer }
+        });
+      }
+      console.log('Offer sent');
+    } catch (error) {
+      console.error('Error creating offer:', error);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     
@@ -82,13 +103,9 @@ const VideoCallSimple = () => {
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            // Determine who initiates based on a simple rule
-            const shouldInitiate = Math.random() > 0.5;
-            setIsInitiator(shouldInitiate);
-            
-            if (shouldInitiate) {
-              setTimeout(createOffer, 2000);
-            }
+            console.log('Connected to signaling channel');
+            // Send join message to let others know we're here
+            sendMessage({ type: 'user-joined', timestamp: Date.now() });
           }
         });
     };
@@ -107,9 +124,20 @@ const VideoCallSimple = () => {
       const pc = peerConnectionRef.current;
       if (!pc || !mounted) return;
 
+      console.log('Received message:', message.type);
+
       try {
         switch (message.type) {
+          case 'user-joined':
+            console.log('Another user joined, creating offer');
+            if (!isInitiator) {
+              setIsInitiator(true);
+              setTimeout(createOffer, 1000);
+            }
+            break;
+            
           case 'offer':
+            console.log('Received offer');
             await pc.setRemoteDescription(message.offer);
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
@@ -117,10 +145,12 @@ const VideoCallSimple = () => {
             break;
             
           case 'answer':
+            console.log('Received answer');
             await pc.setRemoteDescription(message.answer);
             break;
             
           case 'ice-candidate':
+            console.log('Received ICE candidate');
             if (pc.remoteDescription) {
               await pc.addIceCandidate(message.candidate);
             }
@@ -131,18 +161,7 @@ const VideoCallSimple = () => {
       }
     };
 
-    const createOffer = async () => {
-      const pc = peerConnectionRef.current;
-      if (!pc || !mounted) return;
 
-      try {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        sendMessage({ type: 'offer', offer });
-      } catch (error) {
-        console.error('Error creating offer:', error);
-      }
-    };
 
     setupCall();
 
@@ -205,6 +224,16 @@ const VideoCallSimple = () => {
           <div className="waiting-actions">
             <button className="end-call-btn" onClick={handleEndCall}>
               Cancel Call
+            </button>
+            <button 
+              className="end-call-btn" 
+              onClick={() => {
+                console.log('Manual connection attempt');
+                createOffer();
+              }}
+              style={{backgroundColor: '#4CAF50', marginLeft: '10px'}}
+            >
+              Connect Now
             </button>
           </div>
         </div>
