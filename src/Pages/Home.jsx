@@ -462,7 +462,7 @@ useEffect(() => {
                         <MapContainer
                             center={[userLocation.lat, userLocation.lng]}
                             zoom={14}
-                            style={{ height: '500px', width: '100%', borderRadius: '12px' }}
+                            style={{ height: '700px', width: '100%', borderRadius: '12px' }}
                            
                         >
                             <TileLayer
@@ -498,7 +498,7 @@ useEffect(() => {
                                         {/* Circle for service area - this will show for ALL places */}
                                         <Circle
                                             center={[place.lat, place.lng]}
-                                            radius={1000} // 1km radius for all facilities
+                                            radius={100} // 1km radius for all facilities
                                             pathOptions={circleOptions}
                                             eventHandlers={{
                                                 click: () => {
