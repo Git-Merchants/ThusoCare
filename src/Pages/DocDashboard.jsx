@@ -117,6 +117,16 @@ const DocDashboard = () => {
 
     const checkIncomingCalls = async () => {
       try {
+        console.log('Checking for incoming calls...');
+        
+        // First, check all video calls to see what's in the database
+        const { data: allCalls, error: allCallsError } = await supabase
+          .from('video_calls')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        console.log('All video calls in database:', { allCalls, allCallsError });
+        
         const { data: callData, error: callError } = await supabase
           .from('video_calls')
           .select('*')
@@ -124,19 +134,49 @@ const DocDashboard = () => {
           .order('created_at', { ascending: false })
           .limit(1);
         
+        console.log('Pending calls query result:', { callData, callError });
+        
         if (callError) throw callError;
         
         if (callData && callData.length > 0) {
           const call = callData[0];
+          console.log('Found pending call:', call);
+          
+          // Handle anonymous calls (caller_id is null)
+          if (!call.caller_id) {
+            console.log('Found anonymous call');
+            const anonymousCall = {
+              roomId: call.room_id,
+              name: 'Anonymous',
+              surname: 'User',
+              email: 'No email provided',
+              timestamp: call.created_at,
+              callId: call.id
+            };
+            console.log('Setting anonymous call:', anonymousCall);
+            setActiveCall(anonymousCall);
+            return;
+          }
           
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('name, surname, email')
-            .eq('user_id', call.user_id)
+            .eq('user_id', call.caller_id)
             .single();
+          
+          console.log('User data result:', { userData, userError });
           
           if (userError) {
             console.error('Error fetching user data:', userError);
+            // Fallback for unknown user
+            setActiveCall({
+              roomId: call.room_id,
+              name: 'Unknown',
+              surname: 'User',
+              email: 'No email available',
+              timestamp: call.created_at,
+              callId: call.id
+            });
             return;
           }
           
@@ -148,6 +188,8 @@ const DocDashboard = () => {
             timestamp: call.created_at,
             callId: call.id
           });
+        } else {
+          console.log('No pending calls found');
         }
       } catch (error) {
         console.error('Error checking incoming calls:', error);
