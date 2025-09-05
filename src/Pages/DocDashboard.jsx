@@ -254,7 +254,8 @@ const DocDashboard = () => {
   };
 
   const joinVideoCall = () => {
-    const roomId = crypto.randomUUID();
+    // If there's an active call, join that room instead of creating new one
+    const roomId = activeCall ? activeCall.roomId : crypto.randomUUID();
     window.open(`/video-call/${roomId}`, '_blank');
   };
 
