@@ -7,7 +7,7 @@ import PatientDashboard from './Pages/PatientProfile';
 import SignUp from './Pages/Signup';
 import Home from './Pages/Home';
 import FaceAuth from './Pages/FaceAuth';
-import VideoCall from './Pages/VideoCall';
+import VideoCall from './Pages/VideoCallSimple';
 import QuickMedicHelp from './Pages/QuickMedicHelp';
 import DocDashboard from './Pages/DocDashboard';
 import { TranslationProvider } from './context/TranslationContext';
@@ -89,7 +89,6 @@ function App() {
 
         {/* Video call routes - completely public */}
         <Route path="/video-call/:callId" element={<VideoCall />} />
-        <Route path="/video-call" element={<VideoCall />} />
 
       
 

@@ -3,38 +3,32 @@ import { useParams, useNavigate } from 'react-router-dom';
 import '../Styling/VideoCall.css';
 import { supabase } from '../supabase/supabaseConfig';
 
-const VideoCall = () => {
+const VideoCallSimple = () => {
   const { callId } = useParams();
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
   const channelRef = useRef(null);
-  const userIdRef = useRef(Math.random().toString(36).substr(2, 9));
   
   const [isConnected, setIsConnected] = useState(false);
   const [isWaiting, setIsWaiting] = useState(true);
   const [error, setError] = useState(null);
-  const [remoteUserId, setRemoteUserId] = useState(null);
-  const [hasCreatedOffer, setHasCreatedOffer] = useState(false);
+  const [isInitiator, setIsInitiator] = useState(false);
   
   const navigate = useNavigate();
-  const isDoctor = localStorage.getItem('loggedInDoctor');
 
   useEffect(() => {
-    // Suppress browser extension errors
-    const originalError = console.error;
-    console.error = (...args) => {
-      if (args[0]?.includes?.('message channel closed')) return;
-      originalError.apply(console, args);
-    };
-
+    let mounted = true;
+    
     const setupCall = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
+        
+        if (!mounted) return;
         
         localStreamRef.current = stream;
         if (localVideoRef.current) {
@@ -49,12 +43,13 @@ const VideoCall = () => {
         };
 
         peerConnectionRef.current = new RTCPeerConnection(config);
+        const pc = peerConnectionRef.current;
 
         stream.getTracks().forEach((track) => {
-          peerConnectionRef.current.addTrack(track, stream);
+          pc.addTrack(track, stream);
         });
 
-        peerConnectionRef.current.ontrack = (event) => {
+        pc.ontrack = (event) => {
           if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
             setIsWaiting(false);
@@ -62,9 +57,9 @@ const VideoCall = () => {
           }
         };
 
-        peerConnectionRef.current.onicecandidate = (event) => {
-          if (event.candidate) {
-            sendSignal({
+        pc.onicecandidate = (event) => {
+          if (event.candidate && channelRef.current) {
+            sendMessage({
               type: 'ice-candidate',
               candidate: event.candidate
             });
@@ -81,113 +76,78 @@ const VideoCall = () => {
 
     const setupSignaling = () => {
       channelRef.current = supabase
-        .channel(`room-${callId}`)
-        .on('broadcast', { event: 'signal' }, ({ payload }) => {
-          if (payload.userId !== userIdRef.current) {
-            handleSignal(payload);
-          }
+        .channel(`call-${callId}`)
+        .on('broadcast', { event: 'webrtc' }, ({ payload }) => {
+          handleMessage(payload);
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            setTimeout(() => {
-              sendSignal({ type: 'user-joined', userId: userIdRef.current });
-            }, 1000);
+            // Determine who initiates based on a simple rule
+            const shouldInitiate = Math.random() > 0.5;
+            setIsInitiator(shouldInitiate);
+            
+            if (shouldInitiate) {
+              setTimeout(createOffer, 2000);
+            }
           }
         });
     };
 
-    const sendSignal = (data) => {
+    const sendMessage = (message) => {
       if (channelRef.current) {
         channelRef.current.send({
           type: 'broadcast',
-          event: 'signal',
-          payload: { ...data, userId: userIdRef.current }
+          event: 'webrtc',
+          payload: message
         });
       }
     };
 
-    const handleSignal = async (signal) => {
+    const handleMessage = async (message) => {
+      const pc = peerConnectionRef.current;
+      if (!pc || !mounted) return;
+
       try {
-        const pc = peerConnectionRef.current;
-        if (!pc) return;
-        
-        switch (signal.type) {
-          case 'user-joined':
-            setRemoteUserId(signal.userId);
-            if (userIdRef.current < signal.userId && pc.signalingState === 'stable' && !hasCreatedOffer) {
-              setHasCreatedOffer(true);
-              createOffer();
-            }
-            break;
+        switch (message.type) {
           case 'offer':
-            if (pc.signalingState === 'stable') {
-              await handleOffer(signal.offer);
-            }
+            await pc.setRemoteDescription(message.offer);
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendMessage({ type: 'answer', answer });
             break;
+            
           case 'answer':
-            if (pc.signalingState === 'have-local-offer') {
-              await handleAnswer(signal.answer);
-            }
+            await pc.setRemoteDescription(message.answer);
             break;
+            
           case 'ice-candidate':
             if (pc.remoteDescription) {
-              await handleIceCandidate(signal.candidate);
+              await pc.addIceCandidate(message.candidate);
             }
             break;
         }
       } catch (error) {
-        console.error('Error handling signal:', error);
+        console.error('Error handling message:', error);
       }
     };
 
     const createOffer = async () => {
+      const pc = peerConnectionRef.current;
+      if (!pc || !mounted) return;
+
       try {
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
-        sendSignal({ type: 'offer', offer });
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        sendMessage({ type: 'offer', offer });
       } catch (error) {
         console.error('Error creating offer:', error);
-      }
-    };
-
-    const handleOffer = async (offer) => {
-      try {
-        const pc = peerConnectionRef.current;
-        await pc.setRemoteDescription(offer);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        sendSignal({ type: 'answer', answer });
-      } catch (error) {
-        console.error('Error handling offer:', error);
-      }
-    };
-
-    const handleAnswer = async (answer) => {
-      try {
-        const pc = peerConnectionRef.current;
-        if (pc.signalingState === 'have-local-offer') {
-          await pc.setRemoteDescription(answer);
-        }
-      } catch (error) {
-        console.error('Error handling answer:', error);
-      }
-    };
-
-    const handleIceCandidate = async (candidate) => {
-      try {
-        const pc = peerConnectionRef.current;
-        if (pc.remoteDescription && pc.signalingState !== 'closed') {
-          await pc.addIceCandidate(candidate);
-        }
-      } catch (error) {
-        console.error('Error handling ICE candidate:', error);
       }
     };
 
     setupCall();
 
     return () => {
-      console.error = originalError;
+      mounted = false;
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -255,7 +215,7 @@ const VideoCall = () => {
   return (
     <div className="video-call-container">
       <div className="call-header">
-        <h1>Video Call with Healthcare Professional</h1>
+        <h1>Video Call</h1>
         <p>Room: {callId}</p>
       </div>
       
@@ -267,7 +227,7 @@ const VideoCall = () => {
         
         <div className="video-container remote-video">
           <video ref={remoteVideoRef} autoPlay />
-          <div className="video-label">Healthcare Professional</div>
+          <div className="video-label">{isConnected ? 'Connected' : 'Waiting...'}</div>
         </div>
       </div>
       
@@ -280,4 +240,4 @@ const VideoCall = () => {
   );
 };
 
-export default VideoCall;
+export default VideoCallSimple;
