@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import '../Styling/VideoCall.css';
+import { supabase } from '../supabase/supabaseConfig';
 
 const VideoCall = () => {
-  const { user } = useAuth();
   const { callId } = useParams();
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
+  const channelRef = useRef(null);
   
   const [isConnected, setIsConnected] = useState(false);
   const [isWaiting, setIsWaiting] = useState(true);
@@ -18,11 +18,8 @@ const VideoCall = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) return;
-
     const setupCall = async () => {
       try {
-        // Get user media
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
@@ -33,19 +30,19 @@ const VideoCall = () => {
           localVideoRef.current.srcObject = stream;
         }
 
-        // Setup WebRTC
         const config = {
-          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ],
         };
 
         peerConnectionRef.current = new RTCPeerConnection(config);
 
-        // Add tracks
         stream.getTracks().forEach((track) => {
           peerConnectionRef.current.addTrack(track, stream);
         });
 
-        // Handle remote stream
         peerConnectionRef.current.ontrack = (event) => {
           if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
@@ -54,15 +51,105 @@ const VideoCall = () => {
           }
         };
 
-        // For demo purposes, simulate connection after 3 seconds
-        setTimeout(() => {
-          setIsWaiting(false);
-          setIsConnected(true);
-        }, 3000);
+        peerConnectionRef.current.onicecandidate = (event) => {
+          if (event.candidate) {
+            sendSignal({
+              type: 'ice-candidate',
+              candidate: event.candidate
+            });
+          }
+        };
+
+        setupSignaling();
 
       } catch (error) {
         console.error('Error setting up call:', error);
         setError('Unable to access camera/microphone');
+      }
+    };
+
+    const setupSignaling = () => {
+      channelRef.current = supabase
+        .channel(`room-${callId}`)
+        .on('broadcast', { event: 'signal' }, ({ payload }) => {
+          handleSignal(payload);
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            setTimeout(() => {
+              sendSignal({ type: 'user-joined' });
+            }, 1000);
+          }
+        });
+    };
+
+    const sendSignal = (data) => {
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'signal',
+          payload: data
+        });
+      }
+    };
+
+    const handleSignal = async (signal) => {
+      try {
+        switch (signal.type) {
+          case 'user-joined':
+            if (peerConnectionRef.current.signalingState === 'stable') {
+              createOffer();
+            }
+            break;
+          case 'offer':
+            await handleOffer(signal.offer);
+            break;
+          case 'answer':
+            await handleAnswer(signal.answer);
+            break;
+          case 'ice-candidate':
+            await handleIceCandidate(signal.candidate);
+            break;
+        }
+      } catch (error) {
+        console.error('Error handling signal:', error);
+      }
+    };
+
+    const createOffer = async () => {
+      try {
+        const offer = await peerConnectionRef.current.createOffer();
+        await peerConnectionRef.current.setLocalDescription(offer);
+        sendSignal({ type: 'offer', offer });
+      } catch (error) {
+        console.error('Error creating offer:', error);
+      }
+    };
+
+    const handleOffer = async (offer) => {
+      try {
+        await peerConnectionRef.current.setRemoteDescription(offer);
+        const answer = await peerConnectionRef.current.createAnswer();
+        await peerConnectionRef.current.setLocalDescription(answer);
+        sendSignal({ type: 'answer', answer });
+      } catch (error) {
+        console.error('Error handling offer:', error);
+      }
+    };
+
+    const handleAnswer = async (answer) => {
+      try {
+        await peerConnectionRef.current.setRemoteDescription(answer);
+      } catch (error) {
+        console.error('Error handling answer:', error);
+      }
+    };
+
+    const handleIceCandidate = async (candidate) => {
+      try {
+        await peerConnectionRef.current.addIceCandidate(candidate);
+      } catch (error) {
+        console.error('Error handling ICE candidate:', error);
       }
     };
 
@@ -75,10 +162,22 @@ const VideoCall = () => {
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
       }
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+      }
     };
-  }, [user]);
+  }, [callId]);
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
+    try {
+      await supabase
+        .from('video_calls')
+        .update({ call_status: 'ended' })
+        .eq('room_id', callId);
+    } catch (error) {
+      console.error('Error updating call status:', error);
+    }
+    
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
     }
