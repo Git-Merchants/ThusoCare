@@ -71,19 +71,32 @@ const VideoCallSimple = () => {
         });
 
         pc.ontrack = (event) => {
+          console.log('🎥 Remote track received!', event.streams[0]);
           if (remoteVideoRef.current && event.streams[0]) {
             remoteVideoRef.current.srcObject = event.streams[0];
             setIsWaiting(false);
             setIsConnected(true);
+            console.log('✅ Remote video connected');
           }
         };
 
+        pc.onconnectionstatechange = () => {
+          console.log('🔗 Connection state:', pc.connectionState);
+        };
+
+        pc.oniceconnectionstatechange = () => {
+          console.log('🧊 ICE connection state:', pc.iceConnectionState);
+        };
+
         pc.onicecandidate = (event) => {
-          if (event.candidate && channelRef.current) {
+          if (event.candidate) {
+            console.log('🧊 Sending ICE candidate');
             sendMessage({
               type: 'ice-candidate',
               candidate: event.candidate
             });
+          } else {
+            console.log('🧊 ICE gathering complete');
           }
         };
 
@@ -145,8 +158,12 @@ const VideoCallSimple = () => {
             break;
             
           case 'answer':
-            console.log('Received answer');
-            await pc.setRemoteDescription(message.answer);
+            console.log('Received answer, current state:', pc.signalingState);
+            if (pc.signalingState === 'have-local-offer') {
+              await pc.setRemoteDescription(message.answer);
+            } else {
+              console.log('Ignoring answer - wrong state:', pc.signalingState);
+            }
             break;
             
           case 'ice-candidate':
