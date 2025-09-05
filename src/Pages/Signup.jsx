@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import '../Styling/Signup.css';
+import LanguageSelector from '../services/translationService';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
@@ -150,6 +151,19 @@ const Signup = () => {
 
   return (
     <div className="main-container">
+
+       {/*Transalation */}
+                  {/* Navigation Bar */}
+                  <nav className="navbar">
+                      <div className="navbar-content">
+                      <div className="logo">ThusoCare</div>
+                          <div className="nav-links">
+                          {/* Language Selector Component */}
+                          <LanguageSelector />
+                          </div>
+                      </div>
+                      </nav>
+                      
       <div className="card-container">
         <div className="header-section">
           <h1 className="title">Join ThusoCare</h1>

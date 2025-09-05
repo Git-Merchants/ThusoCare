@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../Styling/LoginPage.css';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase/supabaseConfig';
+import LanguageSelector from '../services/translationService';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -87,6 +88,19 @@ const LoginPage = () => {
 
     return (
         <div className="login-container">
+            
+            {/*Transalation */}
+            {/* Navigation Bar */}
+            <nav className="navbar">
+            <div className="navbar-content">
+                <div className="logo">ThusoCare</div>
+                    <div className="nav-links">
+                    {/* Language Selector Component */}
+                        <LanguageSelector />
+                    </div>
+                </div>
+             </nav>
+             
             <div className="login-card">
                 <h1 className="login-title">Login to ThusoCare</h1>
                 <p className="login-subtitle">
