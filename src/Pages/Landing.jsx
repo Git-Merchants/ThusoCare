@@ -112,7 +112,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                 <div className="hero-content">
                     <h1 className="hero-title">Your Health, Simplified.</h1>
                     <p className="hero-subtitle">
-                        Manage appointments, track vitals, and connect with doctors, all in one place.
+                    Find nearby medical facilities, and connect with medical professionals, all in one place.
                     </p>
                     <button className="get-started-btn" onClick={() => handleAuthClick()}>
                         Get Started
@@ -138,7 +138,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                                 </svg>
                             </div>
                             <h3 className="card-title">Appointment Scheduling</h3>
-                            <p className="card-text">Easily book, reschedule, or cancel appointments with your healthcare providers online.</p>
+                            <p className="card-text">Connect with your healthcare providers online.</p>
                         </div>
                         {/* Feature Card 2 */}
                         <div className="feature-card">
@@ -148,7 +148,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                                 </svg>
                             </div>
                             <h3 className="card-title">Personal Health Records</h3>
-                            <p className="card-text">Access and manage your medical history, lab results, and immunization records securely.</p>
+                            <p className="card-text">Access and manage your medical records securely.</p>
                         </div>
                         {/* Feature Card 3 */}
                         <div className="feature-card">
@@ -157,8 +157,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <h3 className="card-title">Medication Reminders</h3>
-                            <p className="card-text">Receive timely reminders to take your medications and track your adherence.</p>
+                            <h3 className="card-title">Analyze your health</h3>
+                            <p className="card-text">Use advanced tools go get suggestions on how to handle medical related issues</p>
                         </div>
                     </div>
                 </div>

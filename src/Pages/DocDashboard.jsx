@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../Styling/DocDashboard.css'
 import { FaBell, FaVideo, FaCalendar, FaChartBar, FaUsers, FaExclamationTriangle, FaUserFriends, FaClock, FaCog } from 'react-icons/fa';
-
-const supabase = window.supabaseClient;
+import { supabase } from '../supabase/supabaseConfig';
 
 const DocDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,6 +16,7 @@ const DocDashboard = () => {
   const [activeCall, setActiveCall] = useState(null);
   const [emergencies, setEmergencies] = useState([]);
   const [showEmergencies, setShowEmergencies] = useState(false);
+
 
   const searchPatients = async (term) => {
     if (!term.trim()) {
@@ -114,12 +114,55 @@ const DocDashboard = () => {
         setActiveCall(JSON.parse(callData));
       }
     };
+
+    const checkIncomingCalls = async () => {
+      try {
+        const { data: callData, error: callError } = await supabase
+          .from('video_calls')
+          .select('*')
+          .eq('call_status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (callError) throw callError;
+        
+        if (callData && callData.length > 0) {
+          const call = callData[0];
+          
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('name, surname, email')
+            .eq('user_id', call.user_id)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user data:', userError);
+            return;
+          }
+          
+          setActiveCall({
+            roomId: call.room_id,
+            name: userData.name,
+            surname: userData.surname,
+            email: userData.email,
+            timestamp: call.created_at,
+            callId: call.id
+          });
+        }
+      } catch (error) {
+        console.error('Error checking incoming calls:', error);
+      }
+    };
     
     fetchDoctorInfo();
     checkActiveCall();
+    checkIncomingCalls();
     
     // Poll for active calls every 2 seconds
-    const interval = setInterval(checkActiveCall, 2000);
+    const interval = setInterval(() => {
+      checkActiveCall();
+      checkIncomingCalls();
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -308,15 +351,6 @@ const DocDashboard = () => {
               </div>
 
               <div className="emergencies-list">
-                <button onClick={() => {
-                  alert('Test button clicked!');
-                  setSelectedPatient({
-                    name: 'Test',
-                    surname: 'Patient',
-                    email: 'test@test.com',
-                    info: []
-                  });
-                }}>Test Patient Selection</button>
                 {emergencies.length === 0 ? (
                   <div className="no-emergencies">
                     <p>No emergency alerts at this time.</p>
@@ -665,8 +699,16 @@ const DocDashboard = () => {
                 <div className="call-actions">
                   <button 
                     className="answer-btn"
-                    onClick={() => {
-                      window.open(`/video-call/${activeCall.roomId}`, '_blank');
+                    onClick={async () => {
+                      try {
+                        await supabase
+                          .from('video_calls')
+                          .update({ call_status: 'active' })
+                          .eq('id', activeCall.callId);
+                        window.open(`/video-call/${activeCall.roomId}`, '_blank');
+                      } catch (error) {
+                        console.error('Error updating call status:', error);
+                      }
                       localStorage.removeItem('activeCall');
                       setActiveCall(null);
                     }}
@@ -675,7 +717,15 @@ const DocDashboard = () => {
                   </button>
                   <button 
                     className="decline-btn"
-                    onClick={() => {
+                    onClick={async () => {
+                      try {
+                        await supabase
+                          .from('video_calls')
+                          .update({ call_status: 'declined' })
+                          .eq('id', activeCall.callId);
+                      } catch (error) {
+                        console.error('Error updating call status:', error);
+                      }
                       localStorage.removeItem('activeCall');
                       setActiveCall(null);
                     }}
