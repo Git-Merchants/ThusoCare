@@ -267,3 +267,38 @@
 .language-btn:hover {
   background: #f5f5f5;
 }
+
+/* Navbar */
+.navbar {
+  position: fixed;          /* stays at the top */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 70px;             /* define exact navbar height */
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  z-index: 1000;
+}
+.navbar-content {
+  width: 100%;
+  max-width: 1200px;        /* keeps content from squishing */
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+}
+
+/* Main container */
+.main-container {
+  margin-top: 150px;        
+  display: flex;
+  justify-content: center;  /* center horizontally */
+  padding: 20px;
+}
+
+
+
+

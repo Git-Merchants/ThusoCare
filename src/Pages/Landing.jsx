@@ -3,6 +3,7 @@ import '../Styling/LandingPage.css';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
+import LanguageSelector from '../services/translationService';
 const LandingPage = () => {
 
       const navigate = useNavigate();
@@ -57,47 +58,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                         ) : (
                     <div className="nav-links">
                         {/* Inner links for sections */}
-                            <div className="language-dropdown">
-                            <button 
-                                className="nav-btn language-btnL"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowLanguages(!showLanguages);
-                                }}
-                                aria-expanded={showLanguages}
-                                aria-haspopup="true"
-                            >
-                                <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                                </svg>
-                                <span className="nav-text">Change Language</span>
-                                <svg className={`nav-icon chevron ${showLanguages ? 'rotate' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            {showLanguages && (
-                                <div className="dropdown-menu">
-                                    {['English', 'Sotho', 'IsiZulu', 'Xhosa', 'Afrikaans'].map((lang) => (
-                                        <button
-                                            key={lang}
-                                            className={`dropdown-item ${selectedLanguage === lang ? 'active' : ''}`}
-                                            onClick={() => {
-                                                setSelectedLanguage(lang);
-                                                setShowLanguages(false);
-                                            }}
-                                        >
-                                            {lang}
-                                            {selectedLanguage === lang && (
-                                                <svg className="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    
+                        {/* Language Selector Component */}
+                        <LanguageSelector />
                       
                         {/* Login and Sign Up buttons */}
                         <button href="/login" className="signup-btn" onClick={() => handleLoginClick()} style={{marginTop: '-20px'}}>Login</button>
@@ -137,8 +99,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 16h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z"></path>
                                 </svg>
                             </div>
-                            <h3 className="card-title">Appointment Scheduling</h3>
-                            <p className="card-text">Connect with your healthcare providers online.</p>
+                            <h3 className="card-title">Video Consultation</h3>
+                            <p className="card-text">Easily video consult with your healthcare providers online.</p>
                         </div>
                         {/* Feature Card 2 */}
                         <div className="feature-card">
@@ -148,7 +110,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                                 </svg>
                             </div>
                             <h3 className="card-title">Personal Health Records</h3>
-                            <p className="card-text">Access and manage your medical records securely.</p>
+                            <p className="card-text">Access and manage your medical history securely.</p>
                         </div>
                         {/* Feature Card 3 */}
                         <div className="feature-card">
@@ -157,8 +119,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <h3 className="card-title">Analyze your health</h3>
-                            <p className="card-text">Use advanced tools go get suggestions on how to handle medical related issues</p>
+                            <h3 className="card-title">AI Medical quick help</h3>
+                            <p className="card-text">Receive quick medical advice from our AI-powered system.</p>
                         </div>
                     </div>
                 </div>
