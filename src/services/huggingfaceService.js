@@ -2,154 +2,628 @@ import { InferenceClient } from '@huggingface/inference';
 
 const hf = new InferenceClient(process.env.REACT_APP_HF_API_TOKEN);
 
-// Option 1: Use a different model that supports text-generation
-export async function getSuggestions(question) {
+// Enhanced AI suggestion system with better context understanding
+export async function getIntelligentSuggestions(question, userContext = {}) {
   try {
-    const prompt = `Provide advice or answer the following question in a helpful manner:\n${question}`;
+    // Basic analysis for context
+    const analysis = { urgency: 'medium', category: 'general' };
     
-    // Try using a different model that definitely supports text-generation
-    const result = await hf.textGeneration({
-      model: 'microsoft/DialoGPT-medium', // Alternative model
-      inputs: prompt,
-      parameters: { 
-        max_new_tokens: 150,
-        temperature: 0.7,
-        return_full_text: false
-      },
-    });
+    // Generate context-aware prompt
+    const enhancedPrompt = buildContextualPrompt(question, analysis, userContext);
     
-    return result.generated_text || 'No response available.';
-  } catch (error) {
-    console.error('Error with text generation:', error);
-    
-    // Fallback: Try with conversational task since Cerebras supports it
-    try {
-      const result = await hf.conversational({
-        model: 'meta-llama/Llama-3.1-8B-Instruct',
-        inputs: {
-          past_user_inputs: [],
-          generated_responses: [],
-          text: `Provide advice or answer the following question in a helpful manner: ${question}`
-        },
-      });
-      
-      return result.generated_text || 'No response available.';
-    } catch (fallbackError) {
-      console.error('Fallback also failed:', fallbackError);
-      throw new Error('Unable to get AI suggestions at this time');
-    }
-  }
-}
-
-// Option 2: Alternative implementation using conversational task directly
-export async function getSuggestionsConversational(question) {
-  try {
-    // Try different models that work with Cerebras conversational API
+    // Try multiple models with different approaches
     const models = [
-      'microsoft/DialoGPT-medium',
-      'microsoft/DialoGPT-small',
-      'facebook/blenderbot-400M-distill'
+      {
+        name: 'meta-llama/Llama-3.1-8B-Instruct',
+        method: 'textGeneration',
+        params: { 
+          max_new_tokens: 200,
+          temperature: 0.7,
+          return_full_text: false,
+          do_sample: true,
+          top_p: 0.9
+        }
+      },
+      {
+        name: 'microsoft/DialoGPT-medium',
+        method: 'conversational',
+        params: {
+          past_user_inputs: userContext.previousQuestions || [],
+          generated_responses: userContext.previousResponses || [],
+          text: enhancedPrompt
+        }
+      },
+      {
+        name: 'google/flan-t5-large',
+        method: 'textGeneration',
+        params: {
+          max_new_tokens: 150,
+          temperature: 0.6,
+          return_full_text: false
+        }
+      }
     ];
 
     for (const model of models) {
       try {
-        const result = await hf.conversational({
-          model: model,
-          inputs: {
-            past_user_inputs: [],
-            generated_responses: [],
-            text: `Medical question: ${question}`
-          },
-        });
+        let result;
+        if (model.method === 'textGeneration') {
+          result = await hf.textGeneration({
+            model: model.name,
+            inputs: enhancedPrompt,
+            parameters: model.params,
+          });
+        } else if (model.method === 'conversational') {
+          result = await hf.conversational({
+            model: model.name,
+            inputs: model.params,
+          });
+        }
         
-        if (result && result.generated_text) {
-          return result.generated_text;
+        if (result && (result.generated_text || result.text)) {
+          const response = result.generated_text || result.text;
+          
+          // Post-process and enhance the AI response
+          const enhancedResponse = enhanceAIResponse(response, analysis);
+          return enhancedResponse;
         }
       } catch (modelError) {
-        console.log(`Model ${model} failed, trying next...`);
+        console.log(`Model ${model.name} failed, trying next...`);
         continue;
       }
     }
     
-    // If all models fail, return a helpful fallback response
-    return generateFallbackAdvice(question);
+    // If all AI models fail, use intelligent fallback
+    const basicAnalysis = { urgency: 'medium', category: 'general' };
+    return generateIntelligentFallback(question, basicAnalysis, userContext);
     
   } catch (error) {
-    console.error('Error with conversational API:', error);
-    return generateFallbackAdvice(question);
+    console.error('Error with intelligent suggestions:', error);
+    const basicAnalysis = { urgency: 'medium', category: 'general' };
+    return generateIntelligentFallback(question, basicAnalysis, userContext);
   }
 }
 
-// Enhanced fallback function that provides comprehensive non-diagnostic guidance
-function generateFallbackAdvice(question) {
+// Advanced question analysis for better context understanding
+function analyzeQuestion(question, userContext = {}) {
   const lowerQuestion = question.toLowerCase();
   
-  // Emergency keywords - comprehensive list
-  const emergencyKeywords = ['emergency', 'severe', 'urgent', 'chest pain', 'bleeding', 'unconscious', 'difficulty breathing', 'heart attack', 'stroke', 'choking', 'seizure', 'overdose', 'poisoning', 'allergic reaction', 'can\'t breathe', 'severe pain', 'blood loss', 'broken bone', 'burns', 'suicide', 'paralysis', 'high fever', 'fainting', 'collapsed'];
+  const analysis = {
+    urgency: 'low',
+    category: 'general',
+    symptoms: [],
+    timeframe: null,
+    previouslyAsked: false,
+    complexity: 'simple',
+    emotionalTone: 'neutral',
+    specificConcerns: []
+  };
+
+  // Urgency assessment
+  const emergencyKeywords = [
+    'emergency', 'urgent', 'severe', 'sudden', 'intense', 'can\'t breathe',
+    'chest pain', 'heart attack', 'stroke', 'bleeding heavily', 'unconscious',
+    'overdose', 'poisoning', 'severe allergic reaction', 'seizure', 'choking'
+  ];
   
+  const highUrgencyKeywords = [
+    'worsening', 'getting worse', 'very painful', 'high fever', 'difficulty breathing',
+    'swelling', 'persistent', 'won\'t stop', 'concerning', 'worried'
+  ];
+
   if (emergencyKeywords.some(keyword => lowerQuestion.includes(keyword))) {
-    return "🚨 EMERGENCY SITUATION DETECTED\n\nIMMEDIATE ACTION REQUIRED:\n• Call your local emergency number (112, 10177, or 911) NOW\n• Go to the nearest emergency room immediately\n• Do not drive yourself - call an ambulance or have someone drive you\n• Stay calm and follow emergency operator instructions\n\nThis is not a diagnosis, but your symptoms suggest you need immediate professional medical attention.";
+    analysis.urgency = 'emergency';
+  } else if (highUrgencyKeywords.some(keyword => lowerQuestion.includes(keyword))) {
+    analysis.urgency = 'high';
+  } else if (lowerQuestion.includes('mild') || lowerQuestion.includes('slight') || lowerQuestion.includes('minor')) {
+    analysis.urgency = 'low';
+  } else {
+    analysis.urgency = 'medium';
   }
-  
-  // Symptom-based advice (non-diagnostic)
-  if (lowerQuestion.includes('headache') || lowerQuestion.includes('head pain')) {
-    return "HEADACHE MANAGEMENT ADVICE:\n\n• Rest in a quiet, dark room\n• Stay well hydrated with water\n• Apply cold or warm compress to head/neck\n• Consider over-the-counter pain relief (follow package directions)\n• Avoid screens and bright lights\n\nSEEK MEDICAL CARE IF:\n• Sudden, severe headache unlike any before\n• Headache with fever, stiff neck, or vision changes\n• Headaches becoming more frequent or severe\n• Headache after head injury\n\nThis advice does not replace professional medical evaluation.";
-  }
-  
-  if (lowerQuestion.includes('fever') || lowerQuestion.includes('temperature')) {
-    return "FEVER MANAGEMENT ADVICE:\n\n• Rest and get plenty of sleep\n• Drink fluids regularly (water, clear broths)\n• Dress lightly and keep room cool\n• Monitor temperature regularly\n• Consider fever reducers if appropriate (follow directions)\n\nSEEK MEDICAL CARE IF:\n• Fever over 103°F (39.4°C)\n• Fever lasting more than 3 days\n• Difficulty breathing or chest pain\n• Severe headache or stiff neck\n• Signs of dehydration\n\nThis is general guidance - consult healthcare providers for personalized advice.";
-  }
-  
-  if (lowerQuestion.includes('anxiety') || lowerQuestion.includes('stress') || lowerQuestion.includes('panic') || lowerQuestion.includes('mental health')) {
-    return "MENTAL HEALTH SUPPORT GUIDANCE:\n\n• Practice deep breathing exercises (4-7-8 technique)\n• Try grounding techniques (5-4-3-2-1 method)\n• Maintain regular sleep schedule\n• Engage in light physical activity\n• Connect with trusted friends or family\n• Consider mindfulness or meditation apps\n\nPROFESSIONAL SUPPORT:\n• Contact a mental health professional\n• Call mental health helplines if needed\n• Speak with your primary care doctor\n\nIF IN CRISIS:\n• Call emergency services or crisis hotlines immediately\n• Go to nearest emergency room\n• Don't stay alone\n\nYour mental health matters - professional support is available.";
-  }
-  
-  if (lowerQuestion.includes('medication') || lowerQuestion.includes('drug') || lowerQuestion.includes('pill') || lowerQuestion.includes('prescription')) {
-    return "MEDICATION GUIDANCE:\n\n• NEVER stop or change medications without consulting your doctor\n• Always follow prescribed dosages and timing\n• Keep an updated list of all medications\n• Check for drug interactions with pharmacist\n• Store medications properly (temperature, light)\n• Don't share prescription medications\n\nFOR QUESTIONS ABOUT:\n• Side effects - contact prescribing doctor or pharmacist\n• Missed doses - follow medication instructions or call pharmacist\n• Cost concerns - ask about generic alternatives\n\nEMERGENCY SITUATIONS:\n• Severe allergic reactions - call emergency services\n• Suspected overdose - call poison control or emergency services\n\nAlways consult healthcare professionals for medication advice.";
-  }
-  
-  if (lowerQuestion.includes('pain') || lowerQuestion.includes('hurt') || lowerQuestion.includes('ache')) {
-    return "PAIN MANAGEMENT GUIDANCE:\n\n• Rest the affected area if possible\n• Apply ice for acute injuries (first 48 hours)\n• Use heat for muscle tension or chronic pain\n• Consider over-the-counter pain relief (follow directions)\n• Gentle stretching or movement as tolerated\n• Maintain good posture\n\nSEEK MEDICAL ATTENTION IF:\n• Severe or worsening pain\n• Pain after injury or accident\n• Pain with numbness, tingling, or weakness\n• Pain interfering with daily activities\n• Signs of infection (redness, swelling, warmth)\n\nChronic pain may require professional pain management strategies.";
-  }
-  
-  if (lowerQuestion.includes('sleep') || lowerQuestion.includes('insomnia') || lowerQuestion.includes('tired')) {
-    return "SLEEP IMPROVEMENT ADVICE:\n\n• Maintain consistent sleep schedule\n• Create relaxing bedtime routine\n• Keep bedroom cool, dark, and quiet\n• Avoid screens 1 hour before bed\n• Limit caffeine after 2 PM\n• Get natural sunlight during day\n• Avoid large meals before bedtime\n\nIF SLEEP PROBLEMS PERSIST:\n• Keep a sleep diary\n• Consult healthcare provider\n• Consider sleep study if recommended\n• Address underlying stress or anxiety\n\nGood sleep is essential for overall health and recovery.";
-  }
-  
-  if (lowerQuestion.includes('diet') || lowerQuestion.includes('nutrition') || lowerQuestion.includes('weight') || lowerQuestion.includes('eating')) {
-    return "NUTRITION AND LIFESTYLE GUIDANCE:\n\n• Eat balanced meals with fruits, vegetables, whole grains\n• Stay hydrated throughout the day\n• Practice portion control\n• Limit processed foods and added sugars\n• Include regular physical activity\n• Plan meals and snacks ahead\n\nFOR SPECIFIC DIETARY NEEDS:\n• Consult registered dietitian\n• Discuss with healthcare provider\n• Consider food allergies or intolerances\n\nWEIGHT MANAGEMENT:\n• Focus on sustainable lifestyle changes\n• Avoid extreme diets\n• Seek professional guidance for significant weight concerns\n\nNutrition needs vary by individual - professional advice recommended.";
-  }
-  
-  // General health advice
-  return "GENERAL HEALTH GUIDANCE:\n\n• Maintain regular healthcare checkups\n• Stay up to date with preventive screenings\n• Practice good hygiene (handwashing, dental care)\n• Get adequate sleep (7-9 hours for adults)\n• Stay physically active as able\n• Manage stress through healthy coping strategies\n• Avoid smoking and limit alcohol\n• Stay connected with family and friends\n\nWHEN TO SEEK MEDICAL CARE:\n• New or concerning symptoms\n• Changes in existing conditions\n• Preventive care and screenings\n• Questions about medications or treatments\n\nIMPORTANT REMINDER:\nThis guidance is educational and does not replace professional medical advice. Always consult healthcare providers for personalized medical care and diagnosis.";
-}
 
-// Option 3: Use a completely different approach with a model known to work
-export async function getSuggestionsAlternative(question) {
-  try {
-    // Use GPT-2 which definitely supports text generation
-    const result = await hf.textGeneration({
-      model: 'gpt2',
-      inputs: `Medical advice request: ${question}\n\nHelpful response:`,
-      parameters: { 
-        max_new_tokens: 150,
-        temperature: 0.8,
-        return_full_text: false,
-        pad_token_id: 50256
-      },
+  // Category identification
+  const categories = {
+    mental_health: ['anxiety', 'depression', 'stress', 'panic', 'mental health', 'mood', 'emotional'],
+    pain: ['pain', 'hurt', 'ache', 'sore', 'tender', 'stiff'],
+    digestive: ['stomach', 'nausea', 'vomit', 'diarrhea', 'constipation', 'bloat', 'indigestion'],
+    respiratory: ['cough', 'breathing', 'lungs', 'wheez', 'shortness of breath', 'congestion'],
+    skin: ['rash', 'itch', 'skin', 'bump', 'lesion', 'acne', 'dry'],
+    cardiovascular: ['heart', 'chest', 'blood pressure', 'circulation', 'pulse'],
+    neurological: ['headache', 'migraine', 'dizziness', 'numbness', 'tingling', 'memory'],
+    musculoskeletal: ['muscle', 'joint', 'back', 'neck', 'shoulder', 'knee'],
+    medication: ['medication', 'drug', 'pill', 'prescription', 'dose'],
+    sleep: ['sleep', 'insomnia', 'tired', 'fatigue', 'rest'],
+    nutrition: ['diet', 'eating', 'weight', 'nutrition', 'appetite']
+  };
+
+  for (const [category, keywords] of Object.entries(categories)) {
+    if (keywords.some(keyword => lowerQuestion.includes(keyword))) {
+      analysis.category = category;
+      break;
+    }
+  }
+
+  // Symptom extraction
+  const symptomPatterns = [
+    /(?:have|having|experiencing|feeling|getting|been) (\w+(?:\s+\w+)*)/g,
+    /my (\w+(?:\s+\w+)*) (?:is|are|has|have|feels)/g,
+    /(\w+) in my (\w+)/g
+  ];
+
+  symptomPatterns.forEach(pattern => {
+    const matches = [...lowerQuestion.matchAll(pattern)];
+    matches.forEach(match => {
+      if (match[1] && match[1].length > 2) {
+        analysis.symptoms.push(match[1]);
+      }
     });
-    
-    return result.generated_text || 'No response available.';
-  } catch (error) {
-    console.error('Error with alternative model:', error);
-    throw new Error('Unable to get AI suggestions at this time');
+  });
+
+  // Timeframe detection
+  const timePatterns = {
+    acute: ['sudden', 'just started', 'this morning', 'today', 'few hours'],
+    recent: ['few days', 'this week', 'recently', 'lately', 'past few'],
+    chronic: ['months', 'years', 'long time', 'always', 'chronic']
+  };
+
+  for (const [timeframe, patterns] of Object.entries(timePatterns)) {
+    if (patterns.some(pattern => lowerQuestion.includes(pattern))) {
+      analysis.timeframe = timeframe;
+      break;
+    }
+  }
+
+  // Emotional tone analysis
+  const emotionalKeywords = {
+    anxious: ['worried', 'concerned', 'anxious', 'scared', 'nervous'],
+    frustrated: ['frustrated', 'annoyed', 'fed up', 'tired of'],
+    hopeful: ['hoping', 'optimistic', 'looking for help'],
+    desperate: ['desperate', 'nothing works', 'tried everything']
+  };
+
+  for (const [emotion, keywords] of Object.entries(emotionalKeywords)) {
+    if (keywords.some(keyword => lowerQuestion.includes(keyword))) {
+      analysis.emotionalTone = emotion;
+      break;
+    }
+  }
+
+  // Complexity assessment
+  const complexityIndicators = {
+    simple: ['what is', 'how to', 'can i', 'should i'],
+    moderate: ['why do i', 'when should', 'how long'],
+    complex: ['multiple', 'various', 'complicated', 'different', 'several']
+  };
+
+  for (const [level, indicators] of Object.entries(complexityIndicators)) {
+    if (indicators.some(indicator => lowerQuestion.includes(indicator))) {
+      analysis.complexity = level;
+      break;
+    }
+  }
+
+  return analysis;
+}
+
+// Build contextual prompts based on analysis
+function buildContextualPrompt(question, analysis, userContext) {
+  let basePrompt = `You are a helpful health information assistant. Provide evidence-based, non-diagnostic guidance for the following health question:\n\n`;
+  
+  // Add context based on analysis
+  if (analysis.urgency === 'emergency') {
+    basePrompt += `URGENT SITUATION - Focus on immediate safety and when to seek emergency care:\n`;
+  } else if (analysis.urgency === 'high') {
+    basePrompt += `Important health concern - Provide thorough guidance including when to seek professional care:\n`;
+  }
+  
+  if (analysis.category !== 'general') {
+    basePrompt += `This appears to be related to ${analysis.category.replace('_', ' ')}. `;
+  }
+  
+  if (analysis.timeframe) {
+    basePrompt += `This seems to be a ${analysis.timeframe} issue. `;
+  }
+  
+  if (userContext.age) {
+    basePrompt += `Consider this is for someone aged ${userContext.age}. `;
+  }
+  
+  if (userContext.existingConditions && userContext.existingConditions.length > 0) {
+    basePrompt += `Relevant medical history includes: ${userContext.existingConditions.join(', ')}. `;
+  }
+
+  basePrompt += `\nQuestion: "${question}"\n\n`;
+  
+  basePrompt += `Please provide:\n`;
+  basePrompt += `1. Immediate practical steps (if any)\n`;
+  basePrompt += `2. General management advice\n`;
+  basePrompt += `3. When to seek professional medical care\n`;
+  basePrompt += `4. Important disclaimers\n\n`;
+  basePrompt += `Response should be helpful, accurate, and emphasize the importance of professional medical advice for diagnosis and treatment.`;
+
+  return basePrompt;
+}
+
+// Enhance AI responses with additional context and safety measures
+function enhanceAIResponse(aiResponse, analysis) {
+  let enhanced = aiResponse.trim();
+  
+  // Add urgency warnings if needed
+  if (analysis.urgency === 'emergency') {
+    enhanced = `🚨 EMERGENCY SITUATION DETECTED\n\nIMMEDIATE ACTION: Call emergency services (112/10177) or go to the nearest emergency room NOW.\n\n${enhanced}`;
+  } else if (analysis.urgency === 'high') {
+    enhanced = `⚠️ IMPORTANT HEALTH CONCERN\n\nConsider contacting a healthcare provider promptly.\n\n${enhanced}`;
+  }
+  
+  // Add category-specific safety information
+  const safetyFooters = {
+    mental_health: "\n\n🧠 MENTAL HEALTH SUPPORT:\nIf you're in crisis, contact emergency services or a mental health crisis hotline immediately.",
+    cardiovascular: "\n\n❤️ HEART HEALTH:\nChest pain, severe shortness of breath, or heart-related symptoms require immediate medical attention.",
+    medication: "\n\n💊 MEDICATION SAFETY:\nNever stop, start, or change medications without consulting your healthcare provider.",
+    pain: "\n\n🩹 PAIN MANAGEMENT:\nSevere, persistent, or worsening pain should be evaluated by a healthcare professional."
+  };
+  
+  if (safetyFooters[analysis.category]) {
+    enhanced += safetyFooters[analysis.category];
+  }
+  
+  // Always add medical disclaimer
+  enhanced += `\n\n⚕️ IMPORTANT MEDICAL DISCLAIMER:\nThis information is for educational purposes only and does not replace professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare providers for personalized medical care.`;
+  
+  return enhanced;
+}
+
+// Intelligent fallback with context awareness
+function generateIntelligentFallback(question, analysis, userContext) {
+  const { urgency, category, symptoms, timeframe, emotionalTone } = analysis;
+  
+  // Emergency situations get priority handling
+  if (urgency === 'emergency') {
+    return generateEmergencyResponse(question, symptoms);
+  }
+  
+  // Generate category-specific intelligent responses
+  switch (category) {
+    case 'mental_health':
+      return generateMentalHealthResponse(question, analysis, userContext);
+    case 'pain':
+      return generatePainManagementResponse(question, analysis, userContext);
+    case 'cardiovascular':
+      return generateCardiovascularResponse(question, analysis, userContext);
+    case 'respiratory':
+      return generateRespiratoryResponse(question, analysis, userContext);
+    case 'digestive':
+      return generateDigestiveResponse(question, analysis, userContext);
+    case 'medication':
+      return generateMedicationResponse(question, analysis, userContext);
+    default:
+      return generateGeneralHealthResponse(question, analysis, userContext);
   }
 }
 
+// Emergency response generator
+function generateEmergencyResponse(question, symptoms) {
+  return `🚨 EMERGENCY SITUATION DETECTED
 
+IMMEDIATE ACTIONS REQUIRED:
+• Call emergency services (112, 10177, or 911) NOW
+• Go to the nearest emergency room immediately
+• Do NOT drive yourself - call an ambulance or have someone drive you
+• Stay calm and follow emergency operator instructions
+• If possible, have someone stay with you
+
+WHILE WAITING FOR HELP:
+• Stay conscious and alert
+• Sit or lie down in a comfortable position
+• Loosen tight clothing
+• Don't eat or drink anything
+• Keep track of your symptoms to report to medical professionals
+
+⚠️ This appears to be a serious medical situation that requires immediate professional intervention. Do not delay seeking emergency medical care.
+
+DISCLAIMER: This is not a medical diagnosis. The symptoms you've described suggest you need immediate professional medical evaluation and treatment.`;
+}
+
+// Mental health response generator
+function generateMentalHealthResponse(question, analysis, userContext) {
+  const { emotionalTone, timeframe } = analysis;
+  
+  let response = `🧠 MENTAL HEALTH SUPPORT AND GUIDANCE\n\n`;
+  
+  if (emotionalTone === 'anxious') {
+    response += `IMMEDIATE ANXIETY MANAGEMENT TECHNIQUES:
+• Practice the 4-7-8 breathing technique (inhale 4, hold 7, exhale 8)
+• Use the 5-4-3-2-1 grounding method (5 things you see, 4 you touch, 3 you hear, 2 you smell, 1 you taste)
+• Progressive muscle relaxation
+• Step outside for fresh air if possible
+
+`;
+  }
+  
+  response += `GENERAL MENTAL WELLNESS STRATEGIES:
+• Maintain a regular sleep schedule (7-9 hours)
+• Engage in regular physical activity, even light walking
+• Practice mindfulness or meditation (apps like Headspace, Calm)
+• Connect with trusted friends, family, or support groups
+• Limit caffeine and alcohol intake
+• Create a daily routine that includes self-care activities
+
+WHEN TO SEEK PROFESSIONAL HELP:
+• Symptoms interfering with daily life or work
+• Persistent feelings lasting more than 2 weeks
+• Thoughts of self-harm or suicide
+• Inability to cope with daily stressors
+• Significant changes in sleep, appetite, or energy levels
+
+CRISIS SUPPORT:
+• If having thoughts of self-harm: Contact emergency services immediately
+• National crisis hotlines are available 24/7
+• Many communities have local mental health crisis services
+• Don't hesitate to reach out - help is available
+
+`;
+  
+  if (timeframe === 'chronic') {
+    response += `LONG-TERM MENTAL HEALTH MANAGEMENT:
+• Consider working with a therapist or counselor
+• Explore different therapeutic approaches (CBT, DBT, etc.)
+• Discuss medication options with a psychiatrist if appropriate
+• Build a strong support network
+• Develop healthy coping strategies for stress management
+
+`;
+  }
+  
+  response += `Remember: Mental health is just as important as physical health. Seeking help is a sign of strength, not weakness. Professional mental health support can provide personalized strategies and treatments that significantly improve quality of life.`;
+  
+  return response;
+}
+
+// Pain management response generator
+function generatePainManagementResponse(question, analysis, userContext) {
+  const { urgency, timeframe, symptoms } = analysis;
+  
+  let response = `🩹 PAIN MANAGEMENT GUIDANCE\n\n`;
+  
+  if (urgency === 'high') {
+    response += `⚠️ SEVERE PAIN - SEEK MEDICAL ATTENTION PROMPTLY\n\n`;
+  }
+  
+  response += `IMMEDIATE PAIN RELIEF STRATEGIES:
+• Rest the affected area and avoid activities that worsen pain
+• Apply ice for acute injuries or inflammation (15-20 minutes every 2-3 hours)
+• Use heat therapy for muscle tension or chronic pain (warm compress or heating pad)
+• Over-the-counter pain medications (follow package directions)
+• Gentle movement or stretching as tolerated
+• Maintain good posture to avoid additional strain
+
+WHEN TO SEEK IMMEDIATE MEDICAL CARE:
+• Severe, sudden, or worsening pain
+• Pain following an injury or accident
+• Pain with numbness, tingling, or weakness
+• Signs of infection (redness, swelling, warmth, fever)
+• Pain interfering significantly with daily activities or sleep
+• Chest pain or abdominal pain
+
+`;
+  
+  if (timeframe === 'chronic') {
+    response += `CHRONIC PAIN MANAGEMENT:
+• Work with healthcare providers to develop a comprehensive pain management plan
+• Consider physical therapy for movement and strengthening
+• Explore stress management techniques as stress can worsen pain
+• Maintain regular, gentle exercise as approved by your doctor
+• Keep a pain diary to identify triggers and patterns
+• Consider complementary approaches (with medical approval): acupuncture, massage, yoga
+• Join support groups for people with chronic pain
+
+`;
+  }
+  
+  response += `PAIN PREVENTION STRATEGIES:
+• Regular exercise to maintain strength and flexibility
+• Proper ergonomics at work and home
+• Good sleep hygiene for healing and pain management
+• Healthy weight maintenance to reduce stress on joints
+• Stress management techniques
+• Proper lifting techniques and body mechanics
+
+IMPORTANT: Persistent or severe pain should always be evaluated by a healthcare professional. Pain is your body's signal that something needs attention, and proper medical evaluation can identify underlying causes and appropriate treatments.`;
+  
+  return response;
+}
+
+// Generate other category-specific responses (cardiovascular, respiratory, etc.)
+function generateCardiovascularResponse(question, analysis, userContext) {
+  return `❤️ CARDIOVASCULAR HEALTH GUIDANCE
+
+⚠️ IMPORTANT: Chest pain, severe shortness of breath, or heart-related symptoms can be medical emergencies. When in doubt, seek immediate medical attention.
+
+IMMEDIATE CONCERNS - CALL EMERGENCY SERVICES IF YOU HAVE:
+• Severe chest pain or pressure
+• Pain spreading to arms, jaw, neck, or back
+• Severe shortness of breath
+• Sudden onset of symptoms
+• Dizziness with chest symptoms
+• Nausea or sweating with chest pain
+
+HEART-HEALTHY LIFESTYLE PRACTICES:
+• Regular moderate exercise (150 minutes per week)
+• Heart-healthy diet rich in fruits, vegetables, whole grains
+• Limit saturated fats, trans fats, and excess sodium
+• Maintain healthy weight
+• Don't smoke; limit alcohol consumption
+• Manage stress through healthy coping strategies
+• Get adequate sleep (7-9 hours)
+• Monitor blood pressure and cholesterol regularly
+
+WHEN TO SEE A HEALTHCARE PROVIDER:
+• New or changing chest discomfort
+• Unusual shortness of breath
+• Irregular heartbeat or palpitations
+• Swelling in legs, ankles, or feet
+• Family history of heart disease
+• High blood pressure or cholesterol
+• Risk factors like diabetes or smoking
+
+Regular cardiovascular health checkups are essential for prevention and early detection of heart conditions.`;
+}
+
+function generateRespiratoryResponse(question, analysis, userContext) {
+  return `🫁 RESPIRATORY HEALTH GUIDANCE
+
+IMMEDIATE BREATHING SUPPORT:
+• Sit upright to ease breathing
+• Breathe slowly and deeply through your nose
+• Stay calm to avoid making breathing more difficult
+• Use a humidifier or breathe steam from a hot shower
+• Stay hydrated with warm fluids
+
+SEEK IMMEDIATE MEDICAL CARE IF:
+• Severe difficulty breathing or shortness of breath
+• Chest pain with breathing
+• Blue lips or fingernails
+• High fever with breathing problems
+• Coughing up blood
+• Sudden onset of breathing difficulties
+
+RESPIRATORY HEALTH MAINTENANCE:
+• Avoid smoking and secondhand smoke
+• Regular exercise to strengthen respiratory muscles
+• Good air quality - avoid pollutants when possible
+• Hand hygiene to prevent respiratory infections
+• Stay up to date with recommended vaccinations
+• Address allergies that may affect breathing
+
+FOR COUGHS AND COLD SYMPTOMS:
+• Rest and increase fluid intake
+• Honey can help soothe throat irritation
+• Warm salt water gargles for sore throat
+• Over-the-counter medications as appropriate
+• Use a humidifier to add moisture to air
+
+Persistent cough, ongoing breathing difficulties, or worsening symptoms warrant medical evaluation.`;
+}
+
+function generateGeneralHealthResponse(question, analysis, userContext) {
+  return `⚕️ GENERAL HEALTH GUIDANCE
+
+HEALTHY LIFESTYLE FOUNDATIONS:
+• Balanced nutrition with variety of fruits, vegetables, whole grains, lean proteins
+• Regular physical activity appropriate for your fitness level
+• Adequate sleep (7-9 hours for adults)
+• Effective stress management techniques
+• Regular healthcare checkups and preventive screenings
+• Good hygiene practices
+• Stay hydrated throughout the day
+
+WHEN TO CONSULT HEALTHCARE PROVIDERS:
+• New or concerning symptoms
+• Changes in existing health conditions
+• Preventive care and health screenings
+• Questions about medications or treatments
+• Family history concerns
+• Lifestyle and wellness planning
+
+HEALTH MONITORING:
+• Keep track of any symptoms or health changes
+• Monitor vital signs if recommended by your doctor
+• Maintain records of medications and medical history
+• Stay informed about health recommendations for your age group
+
+PREVENTIVE CARE:
+• Follow recommended screening schedules
+• Keep vaccinations current
+• Regular dental and vision checkups
+• Discuss family health history with your provider
+• Address risk factors early
+
+Remember: This information is educational and general in nature. Individual health needs vary, and professional medical advice is essential for proper diagnosis, treatment, and personalized health management.`;
+}
+
+function generateDigestiveResponse(question, analysis, userContext) {
+  return `🍽️ DIGESTIVE HEALTH GUIDANCE
+
+IMMEDIATE DIGESTIVE COMFORT MEASURES:
+• Stay hydrated, especially if experiencing nausea or diarrhea
+• BRAT diet for upset stomach (Bananas, Rice, Applesauce, Toast)
+• Small, frequent meals rather than large portions
+• Avoid dairy, caffeine, alcohol, and fatty foods temporarily
+• Rest and avoid strenuous activity
+• Ginger tea or ginger supplements may help with nausea
+
+SEEK MEDICAL ATTENTION IF:
+• Severe abdominal pain
+• Persistent vomiting or inability to keep fluids down
+• Signs of dehydration
+• Blood in vomit or stool
+• High fever with digestive symptoms
+• Severe diarrhea lasting more than 2 days
+
+DIGESTIVE HEALTH MAINTENANCE:
+• Eat a balanced diet rich in fiber
+• Regular meal timing
+• Adequate water intake throughout the day
+• Limit processed foods, excess sugar, and unhealthy fats
+• Manage stress, which can affect digestion
+• Regular physical activity aids digestion
+• Identify and avoid trigger foods if you have sensitivities
+
+Persistent digestive issues, changes in bowel habits, or concerning symptoms should be evaluated by a healthcare professional.`;
+}
+
+function generateMedicationResponse(question, analysis, userContext) {
+  return `💊 MEDICATION SAFETY AND GUIDANCE
+
+CRITICAL MEDICATION SAFETY RULES:
+• NEVER stop, start, or change medications without consulting your healthcare provider
+• Take medications exactly as prescribed - right dose, right time
+• Complete full course of antibiotics even if feeling better
+• Don't share prescription medications with others
+• Store medications properly (temperature, light, moisture)
+• Check expiration dates regularly
+
+MANAGING YOUR MEDICATIONS:
+• Keep an updated list of all medications, supplements, and vitamins
+• Use pill organizers for complex medication schedules
+• Set reminders for medication times
+• Understand what each medication is for and potential side effects
+• Check for drug interactions before starting new medications
+
+PHARMACY SUPPORT:
+• Ask your pharmacist about drug interactions
+• Discuss cost-saving options like generic alternatives
+• Understand proper storage and administration
+• Know what to do if you miss a dose
+
+WHEN TO CONTACT YOUR HEALTHCARE PROVIDER:
+• Experiencing side effects
+• Questions about dosing or administration
+• Need to stop or change medications
+• Starting new medications or supplements
+• Cost concerns affecting medication adherence
+
+EMERGENCY SITUATIONS:
+• Severe allergic reactions - call emergency services immediately
+• Suspected overdose - call poison control or emergency services
+• Serious side effects or adverse reactions
+
+Always work closely with your healthcare team for safe and effective medication management.`;
+}
+
+// Export all functions
 export default {
-  getSuggestions,
-  getSuggestionsConversational,
-  getSuggestionsAlternative,
-  generateFallbackAdvice,
+  getIntelligentSuggestions,
+  analyzeQuestion,
+  buildContextualPrompt,
+  enhanceAIResponse,
+  generateIntelligentFallback,
+  generateEmergencyResponse,
+  generateMentalHealthResponse,
+  generatePainManagementResponse,
+  generateCardiovascularResponse,
+  generateRespiratoryResponse,
+  generateDigestiveResponse,
+  generateMedicationResponse,
+  generateGeneralHealthResponse
 };

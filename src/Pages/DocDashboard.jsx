@@ -15,6 +15,8 @@ const DocDashboard = () => {
   const [allPatients, setAllPatients] = useState([]);
   const [loadingPatients, setLoadingPatients] = useState(false);
   const [activeCall, setActiveCall] = useState(null);
+  const [emergencies, setEmergencies] = useState([]);
+  const [showEmergencies, setShowEmergencies] = useState(false);
 
   const searchPatients = async (term) => {
     if (!term.trim()) {
@@ -36,6 +38,8 @@ const DocDashboard = () => {
       
       const usersWithInfo = await Promise.all(
         (data || []).map(async (user) => {
+          if (!user.id) return { ...user, info: [] };
+          
           const { data: infoData } = await supabase
             .from('info')
             .select('*')
@@ -74,6 +78,7 @@ const DocDashboard = () => {
     setSelectedPatient(patient);
     setSearchTerm('');
     setSearchResults([]);
+    setShowPatientRecords(false);
   };
 
   useEffect(() => {
@@ -129,10 +134,12 @@ const DocDashboard = () => {
       
       const usersWithInfo = await Promise.all(
         (data || []).map(async (user) => {
+          if (!user.user_id) return { ...user, info: [] };
+          
           const { data: infoData } = await supabase
             .from('info')
             .select('*')
-            .eq('user_id', user.id);
+            .eq('user_id', user.user_id);
           
           return {
             ...user,
@@ -164,6 +171,48 @@ const DocDashboard = () => {
   const joinVideoCall = () => {
     const roomId = crypto.randomUUID();
     window.open(`/video-call/${roomId}`, '_blank');
+  };
+
+  const fetchEmergencies = async () => {
+    try {
+      console.log('Fetching from emergencies table...');
+      
+      // Check doctor info from localStorage
+      const doctorInfo = localStorage.getItem('loggedInDoctor');
+      console.log('Doctor info:', doctorInfo);
+      
+      if (!doctorInfo) {
+        alert('Please log in as a doctor to view emergencies');
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('emergencies')
+        .select(`
+          *,
+          users!inner(
+            name,
+            surname,
+            email
+          )
+        `);
+      
+      console.log('Raw query result:', { data, error });
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        alert(`Error fetching emergencies: ${error.message}`);
+        return;
+      }
+      
+      console.log('Emergencies data:', data);
+      console.log('Number of emergencies:', data?.length || 0);
+      setEmergencies(data || []);
+      setShowEmergencies(true);
+    } catch (error) {
+      console.error('Error fetching emergencies:', error);
+      alert(`Failed to fetch emergencies: ${error.message}`);
+    }
   };
 
   return (
@@ -200,9 +249,9 @@ const DocDashboard = () => {
               </div>
               {searchResults.length > 0 && (
                 <div className="search-dropdown">
-                  {searchResults.map((patient) => (
+                  {searchResults.map((patient, index) => (
                     <div 
-                      key={patient.id} 
+                      key={patient.id || patient.user_id || `search-${index}`} 
                       className="search-result-item"
                       onClick={() => selectPatient(patient)}
                     >
@@ -221,9 +270,7 @@ const DocDashboard = () => {
           </div>
 
           <div className={`header-actions ${isMenuOpen ? 'mobile-visible' : ''}`}>
-            <button className="notification-btn">
-              <FaBell className="bell-icon" />
-            </button>
+            
 
             <div className="profile-section">
               <div className="avatar">
@@ -245,7 +292,175 @@ const DocDashboard = () => {
 
       <div className="main-container">
         <div className="content-column left-column">
-          {showPatientRecords ? (
+          {showEmergencies ? (
+            <section className="emergency-alerts-section">
+              <div className="section-header">
+                <div className="section-title">
+                  <FaExclamationTriangle className="emergency-icon" />
+                  <h2>Emergency Alerts</h2>
+                  <button 
+                    className="close-btn"
+                    onClick={() => setShowEmergencies(false)}
+                  >
+                    <img src={require('../images/cross.png')} alt="Close" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="emergencies-list">
+                <button onClick={() => {
+                  alert('Test button clicked!');
+                  setSelectedPatient({
+                    name: 'Test',
+                    surname: 'Patient',
+                    email: 'test@test.com',
+                    info: []
+                  });
+                }}>Test Patient Selection</button>
+                {emergencies.length === 0 ? (
+                  <div className="no-emergencies">
+                    <p>No emergency alerts at this time.</p>
+                  </div>
+                ) : (
+                  emergencies.map((emergency, index) => (
+                    <div key={emergency.id || `emergency-${index}`} style={{
+                      backgroundColor: 'white',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      marginBottom: '20px',
+                      boxShadow: '0 8px 32px rgba(244, 67, 54, 0.15)',
+                      border: '2px solid #ffebee',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '20px'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          backgroundColor: '#ffebee',
+                          padding: '8px 16px',
+                          borderRadius: '25px',
+                          border: '1px solid #f44336'
+                        }}>
+                          <FaExclamationTriangle style={{ color: '#f44336', fontSize: '18px' }} />
+                          <span style={{ color: '#c62828', fontWeight: '700', fontSize: '14px' }}>EMERGENCY ALERT</span>
+                        </div>
+                        <div style={{
+                          color: '#666',
+                          fontSize: '13px',
+                          backgroundColor: '#f5f5f5',
+                          padding: '6px 12px',
+                          borderRadius: '12px'
+                        }}>Reported at:
+                         
+                          {new Date(emergency.time_recorded).toLocaleString()}
+                        </div>
+                      </div>
+                      
+                      <div 
+                        style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        marginBottom: '20px',
+                        padding: '16px',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e9ecef'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}>
+                        <div 
+                          onClick={() => {
+                            alert('Avatar clicked!');
+                            setSelectedPatient({
+                              ...emergency.users,
+                              id: emergency.user_id,
+                              user_id: emergency.user_id,
+                              info: []
+                            });
+                          }}
+                          style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '50%',
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          fontWeight: 'bold',
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                          cursor: 'pointer'
+                        }}>
+                          {getInitials(`${emergency.users.name} ${emergency.users.surname}`)}
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#1f2937' }}>
+                            {emergency.users.name} {emergency.users.surname}
+                          </h4>
+                          <p style={{ margin: '0', color: '#6b7280', fontSize: '14px' }}>
+                            {emergency.users.email}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        marginBottom: '24px',
+                        padding: '16px',
+                        backgroundColor: '#fff7ed',
+                        borderRadius: '12px',
+                        border: '1px solid #fed7aa'
+                      }}>
+                        <h5 style={{ margin: '0 0 12px 0', color: '#ea580c', fontSize: '16px', fontWeight: '600' }}>
+                          Emergency Description:
+                        </h5>
+                        <p style={{ margin: '0', color: '#1f2937', fontSize: '15px', lineHeight: '1.6' }}>
+                          {emergency.emergency}
+                        </p>
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <button 
+                          onClick={() => {
+                            window.open(`https://mail.google.com/mail/?view=cm&to=${emergency.users.email}`, '_blank');
+                          }}
+                          style={{
+                          backgroundColor: '#fefefeff',
+                          color: '#3b82f6',
+                          border: '1px solid #3b82f6',
+                          padding: '12px 24px',
+                          borderRadius: '10px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          
+                        }}
+                        onMouseOver={(e) => e.target.style.backgroundColor = '#ffffffff'}
+                        onMouseOut={(e) => e.target.style.backgroundColor = '#ffffffff'}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                          </svg>
+                          Contact Patient
+                        </button>
+                        
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          ) : showPatientRecords ? (
             <section className="patient-records-section">
               <div className="section-header">
                 <div className="section-title">
@@ -266,8 +481,8 @@ const DocDashboard = () => {
                 </div>
               ) : (
                 <div className="patients-grid">
-                  {allPatients.map((patient) => (
-                    <div key={patient.id} className="patient-record-card" onClick={() => selectPatient(patient)}>
+                  {allPatients.map((patient, index) => (
+                    <div key={patient.id || patient.user_id || `patient-${index}`} className="patient-record-card" onClick={() => selectPatient(patient)}>
                       <div className="patient-header">
                         <div className="avatar">
                           {getInitials(`${patient.name} ${patient.surname}`)}
@@ -284,8 +499,8 @@ const DocDashboard = () => {
                       {patient.info && patient.info.length > 0 && (
                         <div className="medical-summary">
                           <h5>Medical Info</h5>
-                          {patient.info.map((info) => (
-                            <div key={info.id || info.created_at || `${patient.id}-info`} className="info-summary">
+                          {patient.info.map((info, infoIndex) => (
+                            <div key={info.id || info.created_at || `${patient.id}-info-${infoIndex}`} className="info-summary">
                               <span>Blood Type: {info.blood_type || 'N/A'}</span>
                               <span>Allergies: {info.allergies || 'None'}</span>
                               <span>Chronic: {info.chronic_disease || 'None'}</span>
@@ -327,73 +542,91 @@ const DocDashboard = () => {
                   </div>
                 </div>
 
-                {selectedPatient.info && selectedPatient.info.length > 0 && (
+                {selectedPatient.info && selectedPatient.info.length > 0 ? (
                   <div className="medical-info">
-                    <h4>Medical Information</h4>
-                    {selectedPatient.info.map((info) => (
-                      <div key={info.id || info.created_at || `${selectedPatient.id}-info`} className="info-grid">
-                        <div className="info-item">
-                          <label>Height:</label>
-                          <span>{info.height || 'Not provided'}</span>
+                    <h4><img src={require('../images/info.png')} alt="Medical Info" style={{width: '20px', height: '20px', marginRight: '8px'}} />Medical Information</h4>
+                    {selectedPatient.info.map((info, infoIndex) => (
+                      <div key={info.id || info.created_at || `${selectedPatient.user_id || selectedPatient.id}-info-${infoIndex}`} style={{
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        marginBottom: '20px',
+                        border: '1px solid #e9ecef'
+                      }}>
+                        <div style={{ marginBottom: '20px' }}>
+                          <h5 style={{ color: '#2c3e50', marginBottom: '15px', fontSize: '16px' }}><img src={require('../images/stethoscope.png')} alt="Vital Signs" style={{width: '18px', height: '18px', marginRight: '8px'}} />Vital Signs</h5>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                            <div style={{ backgroundColor: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                              <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Height</div>
+                              <div style={{ fontSize: '16px', fontWeight: '600', color: '#2c3e50' }}>{info.height || 'N/A'}</div>
+                            </div>
+                            <div style={{ backgroundColor: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                              <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Weight</div>
+                              <div style={{ fontSize: '16px', fontWeight: '600', color: '#2c3e50' }}>{info.weight || 'N/A'}</div>
+                            </div>
+                            <div style={{ backgroundColor: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                              <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Blood Type</div>
+                              <div style={{ fontSize: '16px', fontWeight: '600', color: '#dc3545' }}>{info.blood_type || 'N/A'}</div>
+                            </div>
+                            <div style={{ backgroundColor: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                              <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>Blood Pressure</div>
+                              <div style={{ fontSize: '16px', fontWeight: '600', color: '#2c3e50' }}>{info.blood_pressure || 'N/A'}</div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="info-item">
-                          <label>Weight:</label>
-                          <span>{info.weight || 'Not provided'}</span>
+                        
+                        <div style={{ marginBottom: '20px' }}>
+                          <h5 style={{ color: '#2c3e50', marginBottom: '15px', fontSize: '16px' }}><img src={require('../images/hospital.png')} alt="Medical Conditions" style={{width: '18px', height: '18px', marginRight: '8px'}} />Medical Conditions</h5>
+                          <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                            <div style={{ marginBottom: '10px' }}>
+                              <strong style={{ color: '#495057' }}>Chronic Diseases:</strong> 
+                              <span style={{ marginLeft: '8px', color: '#6c757d' }}>{info.chronic_disease || 'None reported'}</span>
+                            </div>
+                            <div style={{ marginBottom: '10px' }}>
+                              <strong style={{ color: '#495057' }}>Allergies:</strong> 
+                              <span style={{ marginLeft: '8px', color: '#6c757d' }}>{info.allergies || 'None reported'}</span>
+                            </div>
+                            <div>
+                              <strong style={{ color: '#495057' }}>Current Medications:</strong> 
+                              <span style={{ marginLeft: '8px', color: '#6c757d' }}>{info.current_medications || 'None reported'}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="info-item">
-                          <label>Blood Type:</label>
-                          <span>{info.blood_type || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Blood Pressure:</label>
-                          <span>{info.blood_pressure || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Heart Rate:</label>
-                          <span>{info.heart_rate || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Temperature:</label>
-                          <span>{info.temperature || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Chronic Diseases:</label>
-                          <span>{info.chronic_disease || 'None reported'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Allergies:</label>
-                          <span>{info.allergies || 'None reported'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Current Medications:</label>
-                          <span>{info.current_medications || 'None reported'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Medical History:</label>
-                          <span>{info.medical_history || 'No history provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Insurance Provider:</label>
-                          <span>{info.insurance_provider || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Insurance Number:</label>
-                          <span>{info.insurance_number || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Emergency Contact:</label>
-                          <span>{info.emergency_contact || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item">
-                          <label>Relationship:</label>
-                          <span>{info.relationship || 'Not provided'}</span>
-                        </div>
-                        <div className="info-item full-width">
-                          <label>Additional Notes:</label>
-                          <span>{info.additional_notes || 'No additional notes'}</span>
-                        </div>
+                        
+                        {(info.insurance_provider || info.insurance_number) && (
+                          <div style={{ marginBottom: '20px' }}>
+                            <h5 style={{ color: '#2c3e50', marginBottom: '15px', fontSize: '16px' }}><img src={require('../images/info.png')} alt="Insurance" style={{width: '18px', height: '18px', marginRight: '8px'}} />Insurance</h5>
+                            <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                              <div><strong>Provider:</strong> {info.insurance_provider || 'Not provided'}</div>
+                              <div><strong>Policy:</strong> {info.insurance_number || 'Not provided'}</div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {info.emergency_contact && (
+                          <div style={{ marginBottom: '20px' }}>
+                            <h5 style={{ color: '#2c3e50', marginBottom: '15px', fontSize: '16px' }}><img src={require('../images/emergency.png')} alt="Emergency Contact" style={{width: '18px', height: '18px', marginRight: '8px'}} />Emergency Contact</h5>
+                            <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
+                              <strong>{info.emergency_contact}</strong>
+                              {info.relationship && <span style={{ color: '#6c757d' }}> ({info.relationship})</span>}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {info.additional_notes && (
+                          <div>
+                            <h5 style={{ color: '#2c3e50', marginBottom: '15px', fontSize: '16px' }}><img src={require('../images/notes.png')} alt="Notes" style={{width: '18px', height: '18px', marginRight: '8px'}} />Notes</h5>
+                            <div style={{ backgroundColor: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6', fontStyle: 'italic', color: '#6c757d' }}>
+                              {info.additional_notes}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#6c757d' }}>
+                    <p><img src={require('../images/info.png')} alt="No Info" style={{width: '20px', height: '20px', marginRight: '8px'}} />No medical information available for this patient.</p>
                   </div>
                 )}
               </div>
@@ -473,7 +706,7 @@ const DocDashboard = () => {
                 <h3>Patient Records</h3>
                 <p>Access patient history</p>
               </div>
-              <div className="action-card">
+              <div className="action-card" onClick={fetchEmergencies}>
                 <FaExclamationTriangle className="action-icon" />
                 <h3>Emergency Alerts</h3>
                 <p>Monitor critical cases</p>

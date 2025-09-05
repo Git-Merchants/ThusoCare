@@ -16,8 +16,8 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [surname, setSurname] = useState('');
-  const [idNumber, setIdNumber] = useState('');
   const [gender, setGender] = useState(''); // Default to empty string
+  const [age, setAge] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,65 +30,19 @@ const Signup = () => {
   // State for Supabase
   const [userId, setUserId] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [age, setAge] = useState(null);
 
-  // Initialize Supabase and handle auth state changes
+  // Check if user is already logged in and redirect
   useEffect(() => {
-    const getSession = async () => {
+    const checkExistingSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        console.log('User is logged in:', session.user);
-       
-       
+        navigate('/Home');
       }
     };
-    getSession();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          console.log('User signed in:', session.user);
-          // Redirect to health profile after successful sign-in
-          navigate('/Home');
-        }
-      }
-    );
-
-    // Cleanup subscription
-    return () => subscription.unsubscribe();
+    checkExistingSession();
   }, [navigate]);
 
-  // Validate South African ID number
-  const validateSAID = (idNumber) => {
-    // Check if ID is 13 digits
-    if (!/^\d{13}$/.test(idNumber)) {
-        return 'ID Number must be 13 digits';
-    }
 
-    // Basic date validation from ID
-    const year = parseInt(idNumber.substring(0, 2));
-    const month = parseInt(idNumber.substring(2, 4));
-    const day = parseInt(idNumber.substring(4, 6));
-
-    if (month < 1 || month > 12) {
-        return 'Invalid month in ID Number';
-    }
-
-    if (day < 1 || day > 31) {
-        return 'Invalid day in ID Number';
-    }
-
-    return null; // Return null if valid
-};
-
-const calculateAgeFromID = (idNumber) => {
-    const year = parseInt(idNumber.substring(0, 2));
-    const currentYear = new Date().getFullYear() % 100;
-    const birthYear = year <= currentYear ? 2000 + year : 1900 + year;
-    const age = new Date().getFullYear() - birthYear;
-    return age;
-};
 
   // Handle form submission with Supabase
   const handleSubmit = async (e) => {
@@ -96,30 +50,19 @@ const calculateAgeFromID = (idNumber) => {
     setError(null);
     setLoading(true);
 
-    // Validate ID Number format only
-    const idError = validateSAID(idNumber);
-    if (idError) {
-        setError(idError);
-        setLoading(false);
-        return;
-    }
-
-    // Calculate age from ID
-    const userAge = calculateAgeFromID(idNumber);
-    setAge(userAge);
-
     try {
       // Sign up with email and password
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: null,
           data: {
             first_name: firstName,
             surname: surname,
             gender: gender,
-            phone: phone,
-            age: userAge // Store age in the database
+            age: age,
+            phone: phone
           },
         },
       });
@@ -136,22 +79,22 @@ const calculateAgeFromID = (idNumber) => {
         .insert([
           {
             user_id: authData.user.id,
+            email: email,
             name: firstName,
             surname: surname,
             gender: gender,
-            phone: phone,
-            age: userAge // Store age in profiles table
+            age: age,
+            phone: phone
           }
         ]);
 
       if (dbError) {
         setError(`Failed to save user data: ${dbError.message}`);
-        await supabase.auth.admin.deleteUser(authData.user.id);
         setLoading(false);
         return;
       }
 
-      // Success: Show modal instead of immediate navigation
+      // Success: Show modal and navigate to home
       setShowModal(true);
     } catch (err) {
       setError('An unexpected error occurred');
@@ -272,18 +215,8 @@ const calculateAgeFromID = (idNumber) => {
             </div>
           </div>
 
-          {/* ID Number and Gender */}
+          {/* Gender and Age */}
           <div className="form-grid">
-            <div className="input-group">
-              <input
-                type="text"
-                placeholder="ID Number"
-                value={idNumber}
-                onChange={(e) => setIdNumber(e.target.value)}
-                className="input-field"
-                required
-              />
-            </div>
             <div className="input-group">
               <select
                 value={gender}
@@ -295,6 +228,18 @@ const calculateAgeFromID = (idNumber) => {
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
+            </div>
+            <div className="input-group">
+              <input
+                type="number"
+                placeholder="Age"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                className="input-field"
+                min="1"
+                max="120"
+                required
+              />
             </div>
           </div>
 
@@ -358,7 +303,7 @@ const calculateAgeFromID = (idNumber) => {
         )}
       </div>
       {/* Success Modal */}
-      <Modal show={showModal} onClose={() => navigate('/health-profile')}>
+      <Modal show={showModal} onClose={() => navigate('/Home')}>
         <h2>Account Created!</h2>
         <p>Your account has been successfully created. Welcome to ThusoCare!</p>
       </Modal>

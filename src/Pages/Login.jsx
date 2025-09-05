@@ -37,7 +37,12 @@ const LoginPage = () => {
         });
         
         if (error) {
-            setError('Invalid login credentials');
+            console.error('Login error:', error);
+            if (error.message.includes('Email not confirmed')) {
+                setError('Please check your email and confirm your account before logging in.');
+            } else {
+                setError(error.message || 'Invalid login credentials');
+            }
             return;
         }
         

@@ -353,7 +353,7 @@ useEffect(() => {
                     <div className="logo">ThusoCare</div>
                     <div className="nav-controls">
                         {/* Language Selector */}
-                        <div className="language-dropdown" style={{marginRight: '25px'}}>
+                        <div className="language-dropdown">
                             <button 
                                 className="nav-btn language-btn"
                                 onClick={(e) => {
